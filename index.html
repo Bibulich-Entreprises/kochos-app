@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#eef2f6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#10161f" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="kochOS">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="iconos/icono-180.png">
+<link rel="icon" href="iconos/icono-192.png">
+<title>kochOS</title>
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+  <header class="marca">
+    <span class="logo">koch<b>OS</b></span>
+    <span class="consola" id="consola-nombre"></span>
+  </header>
+
+  <!-- Sin perfil todavía: elegir cómo entrar. -->
+  <main class="pantalla" data-pantalla="elegir">
+    <h1>¡Hola!</h1>
+    <p class="suave">Para jugar en kochOS, armá tu Kot.</p>
+    <button class="opcion" data-accion="crear-perfil">
+      <strong>Crear mi perfil</strong>
+      <span>Se guarda en este celular: tu Kot, tus récords y tus estadísticas.</span>
+    </button>
+    <button class="opcion" data-accion="crear-invitado">
+      <strong>Entrar como invitado</strong>
+      <span>Tu Kot dura hasta la medianoche. Si te gusta, lo guardás.</span>
+    </button>
+  </main>
+
+  <!-- Formulario de perfil o invitado. -->
+  <main class="pantalla" data-pantalla="formulario">
+    <div class="vista-kot" id="vista-kot"></div>
+    <h1 id="formulario-titulo">Tu perfil</h1>
+    <label class="campo">
+      <span>Nombre</span>
+      <input id="nombre" maxlength="12" autocomplete="nickname" autocapitalize="words" placeholder="Cómo te llaman">
+    </label>
+    <div class="campo">
+      <span>Color</span>
+      <div class="colores" id="colores"></div>
+    </div>
+    <div class="campo">
+      <span>Control preferido</span>
+      <div class="segmentos" id="modos">
+        <button data-modo="puntero" class="activo">Puntero</button>
+        <button data-modo="touchpad">Touchpad</button>
+      </div>
+    </div>
+    <p class="nota">El Kot de verdad lo vas a poder diseñar más adelante. Por ahora es tu silueta con tu color.</p>
+    <div class="acciones">
+      <button class="secundario" data-accion="volver">Volver</button>
+      <button class="principal" data-accion="guardar" id="guardar">Listo</button>
+    </div>
+  </main>
+
+  <!-- Con perfil (o invitado de hoy): entrar a la consola. -->
+  <main class="pantalla" data-pantalla="inicio">
+    <div class="vista-kot camina" id="kot-inicio"></div>
+    <h1 id="saludo">Hola</h1>
+    <p class="etiqueta" id="tipo"></p>
+    <button class="principal grande" data-accion="entrar" id="entrar">Entrar</button>
+    <div id="consolas"></div>
+    <p class="suave" id="sin-consola">Escaneá el QR de la tele para entrar a una consola.</p>
+    <div class="enlaces">
+      <button data-accion="guardar-invitado" id="guardar-invitado">Guardar mi Kot como perfil</button>
+      <button data-accion="editar">Editar</button>
+      <button data-accion="otro">Entrar como otra persona</button>
+    </div>
+  </main>
+
+  <!-- La primera vez en una consola: explicar el aviso de Safari. -->
+  <main class="pantalla" data-pantalla="aviso">
+    <h1>Una sola vez</h1>
+    <p>La consola está en la wifi de tu casa, así que Safari te va a decir que <b>la conexión no es privada</b>.</p>
+    <ol>
+      <li>Tocá <b>Mostrar detalles</b>.</li>
+      <li>Tocá <b>visitar este sitio web</b> y confirmá.</li>
+    </ol>
+    <p class="suave">En esta consola no te lo vuelve a pedir.</p>
+    <div class="acciones">
+      <button class="secundario" data-accion="volver-inicio">Volver</button>
+      <button class="principal" data-accion="entrar-ya">Entendido, entrar</button>
+    </div>
+  </main>
+
+  <script src="kot.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
