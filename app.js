@@ -258,18 +258,14 @@ function elegirColor(color) {
   borrador.kot = normalizarKot(borrador.kot, color);
   pintarColores();
   persistirBorrador();
-  if (vistaKot) vistaKot.modelo.aplicar(borrador.kot);
-  else $("vista-kot").innerHTML = kotSvg(color, borrador.nombre || "?");
 }
 
 function pintarModos() {
   document.querySelectorAll("#modos button").forEach((b) => b.classList.toggle("activo", b.dataset.modo === borrador.modo));
 }
 
-async function montarVistaFormulario() {
-  const vista = await crearVista($("vista-kot"), borrador.kot, { encuadre: "cuerpo", velocidad: .0015, inicial: borrador.nombre || "?" });
-  $("nota-preview").hidden = !!vista;
-}
+// Sin Kot girando en el perfil ni en el inicio (23/10, Mirko): el Kot se ve en el editor.
+async function montarVistaFormulario() {}
 
 // --- Paso 2: editor embebido ------------------------------------------------------
 
@@ -424,8 +420,6 @@ async function pintarInicio(opciones = {}) {
   $("sin-consola").style.display = consola || consolas.length ? "none" : "";
 
   mostrar("inicio");
-  const vista = await crearVista($("kot-inicio"), yo.kot, { encuadre: "cuerpo", velocidad: .0008, inicial: yo.nombre });
-  $("nota-inicio").hidden = !!vista;
   if (opciones.aviso) avisar(opciones.aviso);
 }
 
