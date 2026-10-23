@@ -1,0 +1,815 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Editor de Kot</title>
+<!-- Editor de Kot, flujo B "paso a paso" (el elegido el 22/10): 5 pasos (Cuerpo, Cara, Pelo, Ropa, Extras), una parte
+     por vez, se cambia la opción deslizando al costado del Kot o con ‹ ›. Se guarda desde cualquier paso y recién ahí
+     aparece el botón de la sala (ragdoll-kot.html). Usa el Kot real (el Stickman, lo arma kot-modelo.js): kot.glb,
+     kot.json y las miniaturas salen de kot_base.blend con consola/kots/herramientas/exportar_web.py.
+     El editor anterior queda en editor-kot-viejo.html para comparar. -->
+<style>
+:root {
+  --fondo: #eef2f6; --tarjeta: #ffffff; --tinta: #1f2a36; --suave: #6f7d8c; --borde: rgba(31, 42, 54, .1);
+  --acento: #2f6ff0; --hundido: #e3e9ef; --cielo-a: #dfe8f2; --cielo-b: #f6f8fb; --mini: #e9edf2;
+  --sombra: 0 10px 30px rgba(20, 30, 50, .14);
+}
+@media (prefers-color-scheme: dark) {
+  :root { --fondo: #10161f; --tarjeta: #1f2836; --tinta: #e9eef5; --suave: #8693a5; --borde: rgba(255, 255, 255, .08);
+    --acento: #4f86ff; --hundido: #18202b; --cielo-a: #1a2533; --cielo-b: #10161f; --mini: #273243;
+    --sombra: 0 10px 30px rgba(0, 0, 0, .4); }
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; min-height: 100%; }
+body { background: var(--fondo); color: var(--tinta); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; padding: 0; }
+
+/* Teléfono: pantalla completa en el celu, con marco en pantallas anchas. */
+.telefono { position: relative; width: 100%; height: 100dvh; max-width: 430px; margin: 0 auto; display: flex;
+  flex-direction: column; overflow: hidden; background: var(--fondo); }
+@media (min-width: 700px) {
+  body { display: grid; place-items: center; min-height: 100vh; padding: 24px; background: var(--hundido); }
+  body .telefono { width: 390px; height: 844px; border-radius: 46px; box-shadow: 0 0 0 10px #0d1117, var(--sombra); }
+}
+
+.arriba { display: flex; flex-direction: column; gap: 10px; padding: max(10px, env(safe-area-inset-top)) 16px 8px; }
+.linea { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.arriba h1 { margin: 0; font-size: 23px; letter-spacing: -.4px; }
+.arriba small { color: var(--suave); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 62vw; display: block; }
+.icono { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--tarjeta);
+  border: 1px solid var(--borde); font-size: 17px; flex: 0 0 auto; }
+.acciones { display: flex; gap: 6px; }
+
+.pasos { display: flex; gap: 6px; }
+.pasos button { flex: 1; display: flex; flex-direction: column; gap: 5px; align-items: center; font-size: 10.5px;
+  font-weight: 700; color: var(--suave); }
+.pasos button i { display: block; width: 100%; height: 5px; border-radius: 3px; background: var(--hundido); }
+.pasos button.hecho i { background: var(--acento); opacity: .45; }
+.pasos button.ahora { color: var(--tinta); }
+.pasos button.ahora i { background: var(--acento); }
+
+.vista { position: relative; flex: 1 1 auto; min-height: 0; margin: 4px 12px 0; border-radius: 26px; overflow: hidden;
+  background: linear-gradient(var(--cielo-a), var(--cielo-b)); border: 1px solid var(--borde); touch-action: none; }
+.vista canvas { display: block; width: 100%; height: 100%; }
+.cargando { position: absolute; inset: 0; display: grid; place-items: center; color: var(--suave); font-size: 14px; padding: 24px; text-align: center; }
+.flecha { position: absolute; top: 50%; transform: translateY(-50%); z-index: 2; width: 46px; height: 46px; border-radius: 50%;
+  background: var(--tarjeta); box-shadow: var(--sombra); display: grid; place-items: center; font-size: 24px; font-weight: 700;
+  line-height: 1; opacity: .92; }
+.flecha.izq { left: 8px; } .flecha.der { right: 8px; }
+.cartel { position: absolute; z-index: 2; top: 10px; left: 50%; transform: translateX(-50%); max-width: 88%;
+  background: var(--tarjeta); border-radius: 999px; padding: 7px 13px; font-weight: 700; font-size: 13px;
+  box-shadow: var(--sombra); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+.cartel b { color: var(--acento); }
+
+.sub { display: flex; gap: 6px; padding: 10px 16px 0; overflow-x: auto; scrollbar-width: none; }
+.sub:empty { display: none; }
+.sub::-webkit-scrollbar { display: none; }
+.chip { padding: 7px 13px; border-radius: 999px; background: var(--hundido); font-weight: 650; font-size: 13px; white-space: nowrap; flex: 0 0 auto; }
+.chip.activo { background: var(--acento); color: #fff; }
+
+.panel { padding: 10px 16px 2px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; max-height: 40vh; }
+.fila { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 3px 3px 5px; }
+.fila::-webkit-scrollbar { display: none; }
+.mini { flex: 0 0 auto; width: 62px; height: 62px; border-radius: 14px; background: var(--mini); border: 3px solid transparent;
+  overflow: hidden; position: relative; }
+.mini img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mini.elegida { border-color: var(--acento); }
+.mini.sin::after { content: "✕"; position: absolute; inset: 0; display: grid; place-items: center; font-size: 22px; color: var(--suave); }
+.punto-choque { position: absolute; top: 4px; right: 4px; width: 9px; height: 9px; border-radius: 50%;
+  background: #ff8c1a; box-shadow: 0 0 0 2px var(--mini), 0 1px 3px rgba(0, 0, 0, .3); pointer-events: none; }
+
+.muestras { display: flex; flex-wrap: wrap; gap: 9px; padding: 3px 3px 5px; }
+.muestras.linea { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding: 6px 6px 7px; }
+.muestras.linea::-webkit-scrollbar { display: none; }
+/* "Como viene": el color de fábrica de la parte, con una flechita de volver. */
+.muestra.fabrica::before { content: "↺"; position: absolute; inset: 0; display: grid; place-items: center; font: 700 18px/1 system-ui;
+  color: #fff; text-shadow: 0 1px 3px #000a; }
+.seccion { font-size: 12px; font-weight: 750; color: var(--suave); text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
+.muestra { flex: 0 0 auto; width: 42px; height: 42px; border-radius: 50%; background: var(--c); position: relative;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .15); }
+.muestra.elegida::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; border: 3px solid var(--tinta); }
+
+.sala { margin: 6px 16px 0; padding: 13px; border-radius: 18px; background: var(--tarjeta); border: 2px solid var(--acento);
+  color: var(--acento); font-weight: 750; font-size: 15px; }
+.sala.oculto { display: none; }
+
+.pie { display: flex; gap: 8px; padding: 10px 16px max(12px, env(safe-area-inset-bottom)); }
+.boton { padding: 13px 10px; border-radius: 18px; font-size: 14.5px; font-weight: 750; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; }
+.boton:disabled { opacity: .38; }
+.secundario { background: var(--hundido); }
+.principal { background: var(--acento); color: #fff; }
+#atras { flex: 1; }
+#listo { flex: 1.1; }
+#siguiente { flex: 1.5; }
+
+.aviso-choque { position: fixed; left: 50%; bottom: 182px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; z-index: 6;
+  display: flex; align-items: center; gap: 10px; max-width: 92%; padding: 9px 10px 9px 15px; border-radius: 16px;
+  background: var(--tarjeta); color: var(--tinta); border: 1px solid var(--borde); box-shadow: 0 8px 24px rgba(0, 0, 0, .22);
+  font-size: 13px; font-weight: 600; line-height: 1.25; transition: .25s; }
+.aviso-choque.ver { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+.aviso-choque button { flex: 0 0 auto; padding: 6px 9px; border-radius: 10px; background: var(--hundido); color: var(--acento); font-weight: 700; }
+</style>
+<script type="importmap">{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+  "cannon-es": "https://unpkg.com/cannon-es@0.20.0/dist/cannon-es.js"
+} }</script>
+</head>
+<body>
+  <div class="telefono">
+    <header class="arriba">
+      <div class="linea">
+        <div><h1 id="titulo">Tu cuerpo</h1><small id="subtitulo">Paso 1</small></div>
+        <div class="acciones"><button class="icono" id="azar" aria-label="Al azar">🎲</button><button class="icono" id="deshacer" aria-label="Deshacer">↶</button><button class="icono" id="volver" aria-label="Volver">←</button></div>
+      </div>
+      <div class="pasos" id="pasos"></div>
+    </header>
+    <div class="vista" id="vista">
+      <div class="cargando" id="cargando">Cargando tu Kot…</div>
+      <button class="flecha izq" id="anterior" aria-label="Opción anterior">‹</button>
+      <button class="flecha der" id="siguiente-op" aria-label="Opción siguiente">›</button>
+      <div class="cartel" id="cartel"></div>
+    </div>
+    <nav class="sub" id="sub"></nav>
+    <section class="panel" id="panel"></section>
+    <button class="sala oculto" id="sala">🤸 Ir a la sala de juegos</button>
+    <footer class="pie">
+      <button class="boton secundario" id="atras" disabled>← Atrás</button>
+      <button class="boton principal" id="listo">Guardar</button>
+      <button class="boton secundario" id="siguiente">Siguiente →</button>
+    </footer>
+  </div>
+  <div class="aviso-choque" id="aviso-choque"><span id="aviso-choque-texto"></span><button id="aviso-choque-deshacer">Deshacer</button></div>
+
+<script type="module">
+import * as THREE from "three";
+import {
+  cargarKot, RUTA_MINIS, KOT_INICIAL, PIELES, LOCOS, PELO_NATURAL, PELO_FANTASIA, ROPA_BASICOS, OJOS,
+  copiar, cargarBorrador, guardarBorrador, kotAlAzar, entornoDeEstudio, RECOLOR, coloresDe,
+} from "./kot-modelo.js";
+import { iniciarChoques, TIPOS_CON_CHOQUE, NOMBRE_PIEZA } from "./choques.js";
+
+// Embebido en la puerta (index.html) el editor es el paso 2 del mismo recorrido: avisa al padre por postMessage.
+// Suelto (página propia) guarda en el borrador del celular y ofrece la sala.
+const embebido = window.parent !== window;
+const parametros = new URLSearchParams(location.search);
+const origen = parametros.get("origen");
+const avisarAlPadre = (tipo, datos = {}) => {
+  if (embebido) window.parent.postMessage({ kochos: tipo, ...datos }, location.origin);
+};
+
+// El botón de volver se conecta antes de cargar el .glb: si la carga falla, igual se puede salir.
+document.getElementById("volver").onclick = () => {
+  if (embebido) { avisarAlPadre("volver"); return; }
+  if (origen) { location.href = "../index.html?origen=editor"; return; }
+  history.back();
+};
+
+if (embebido) {
+  const nombre = (parametros.get("nombre") || "").trim();
+  document.getElementById("volver").setAttribute("aria-label", "Volver al perfil");
+  document.getElementById("subtitulo").textContent = nombre ? `Paso 2 de 2 · ${nombre}` : "Paso 2 de 2";
+  document.title = "Tu Kot · kochOS";
+}
+
+// Tipos de pieza (las subcolecciones de 2_PIEZAS en kot_base.blend): nombre en el menú y qué parte del Kot se mira.
+const TIPOS = {
+  caras: { nombre: "Cara", encuadre: "cabeza" }, pelos: { nombre: "Pelo", encuadre: "cabeza" },
+  // La cara va por partes desde el 23/10: ojos, cejas y boca (antes cada cara traía todo junto).
+  ojos: { nombre: "Ojos", encuadre: "cabeza" }, cejas: { nombre: "Cejas", encuadre: "cabeza" },
+  bocas: { nombre: "Boca", encuadre: "cabeza" },
+  barbas: { nombre: "Barba", encuadre: "cabeza" }, anteojos: { nombre: "Anteojos", encuadre: "cabeza" },
+  sombreros: { nombre: "Sombrero", encuadre: "cabeza" }, caretas: { nombre: "Careta", encuadre: "cabeza" },
+  remeras: { nombre: "Remera", encuadre: "cuerpo" }, pantalones: { nombre: "Pantalón", encuadre: "cuerpo" },
+  medias: { nombre: "Medias", encuadre: "pies" }, zapatillas: { nombre: "Zapatillas", encuadre: "pies" },
+  guantes: { nombre: "Guantes", encuadre: "cuerpo" },
+  // Los Custom_* del pack: disfraces enteros (pancho, lámpara con mesita...).
+  extras: { nombre: "Disfraz", encuadre: "cuerpo" },
+};
+// Los accesorios (espadas, capas...) son para los juegos: no entran al editor.
+const OCULTOS = new Set(["mano", "espalda"]);
+
+// Los 5 pasos de la maqueta B. Cada paso tiene una o más "partes": una pieza del catálogo o una paleta de color.
+const PASOS = [
+  { nombre: "Tu cuerpo", corto: "Cuerpo", partes: ["piel"] },
+  { nombre: "Tu cara", corto: "Cara", partes: ["caras", "ojos", "cejas", "bocas", "anteojos", "caretas"] },
+  { nombre: "Tu pelo", corto: "Pelo", partes: ["pelos", "barbas"] },
+  { nombre: "Tu ropa", corto: "Ropa", partes: ["remeras", "pantalones", "medias", "zapatillas", "guantes"] },
+  { nombre: "Extras", corto: "Extras", partes: ["sombreros", "extras"] },
+];
+// Partes que son una paleta de color, no una pieza.
+const PALETAS = {
+  piel: { nombre: "Piel", encuadre: "cuerpo", clave: "colorCuerpo",
+    tabs: [["Piel real", PIELES], ["Colores locos", LOCOS]] },
+  colorPelo: { nombre: "Color de pelo", encuadre: "cabeza", clave: "colorPelo",
+    tabs: [["Pelo natural", PELO_NATURAL], ["Fantasía", PELO_FANTASIA]] },
+  colorBarba: { nombre: "Color de barba", encuadre: "cabeza", clave: "colorBarba",
+    tabs: [["Pelo natural", PELO_NATURAL], ["Fantasía", PELO_FANTASIA]] },
+  colorOjos: { nombre: "Color de ojos", encuadre: "cabeza", clave: "colorOjos", tabs: [["Ojos", OJOS]] },
+  colorCejas: { nombre: "Color de cejas", encuadre: "cabeza", clave: "colorCejas",
+    tabs: [["Pelo natural", PELO_NATURAL], ["Fantasía", PELO_FANTASIA]] },
+};
+// Las paletas de las partes de una prenda (ver pintarPartes): el pelo con sus tonos, el resto con los de ropa.
+const TABS_ROPA = [["Básicos", ROPA_BASICOS], ["Colores", LOCOS]];
+const TABS_PELO = [["Pelo natural", PELO_NATURAL], ["Fantasía", PELO_FANTASIA]];
+const esColor = (parte) => !!PALETAS[parte];
+// Piezas de un solo color: su paleta va abajo de las miniaturas, en la misma pestaña (solo con la pieza puesta).
+// Pelo y ropa se tiñen por partes (pintarPartes, RECOLOR en kot-modelo.js).
+const COLOR_DE = { ojos: "colorOjos", cejas: "colorCejas", barbas: "colorBarba" };
+const INFO = (parte) => PALETAS[parte] || { nombre: TIPOS[parte]?.nombre || parte, encuadre: TIPOS[parte]?.encuadre || "cuerpo" };
+
+let kot = { ...copiar(KOT_INICIAL), ...cargarBorrador() };
+const historial = [];
+let pasoActual = 0;
+let parte = PASOS[0].partes[0];
+const paleta = {}; // qué pestaña de color está abierta en cada parte ("piel" y "colorPelo")
+
+// --- Escena -------------------------------------------------------------------------------
+const vista = document.getElementById("vista");
+const render = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+render.setPixelRatio(Math.min(devicePixelRatio, 2));
+render.outputColorSpace = THREE.SRGBColorSpace;
+vista.prepend(render.domElement);
+
+const escena = new THREE.Scene();
+const camara = new THREE.PerspectiveCamera(28, 1, .1, 50);
+entornoDeEstudio(render, escena);
+escena.add(new THREE.HemisphereLight(0xffffff, 0x8899aa, 1.5));
+const sol = new THREE.DirectionalLight(0xffffff, 1.8);
+sol.position.set(1.5, 3, 3);
+escena.add(sol);
+const piso = new THREE.Mesh(new THREE.CylinderGeometry(.75, .82, .08, 9), new THREE.MeshLambertMaterial({ color: "#cfd8e3", flatShading: true }));
+piso.position.y = -.04;
+escena.add(piso);
+
+const giro = new THREE.Group();
+const salto = new THREE.Group();
+giro.add(salto);
+escena.add(giro);
+
+// --- Kot real (.glb): lo arma kot-modelo.js ----------------------------------------------
+const loadPromise = cargarKot();
+const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout cargando kot.glb (30s)")), 30000));
+const modelo = await Promise.race([loadPromise, timeoutPromise]).catch((e) => {
+  console.error("No se pudo cargar el Kot:", e);
+  const cargando = document.getElementById("cargando");
+  if (cargando) cargando.textContent = "No se pudo cargar el Kot. Revisá la conexión y volvé a entrar.";
+  throw e;
+});
+const { catalogo, kotModelo, piezas, huesoCabeza } = modelo;
+salto.add(kotModelo);
+document.getElementById("cargando").remove();
+const aplicar = () => modelo.aplicar(kot);
+// Clips del Stickman (reposo y gestos): ver kot-modelo.js (Animador).
+const clips = modelo.clips;
+aplicar();
+clips?.fondoA("reposo", 0);
+// Qué piezas se atraviesan (cajas medidas en la pose de descanso). Ver choques.js.
+const choques = iniciarChoques({ piezas, catalogo, kotModelo, huesoCabeza });
+const { choca } = choques;
+
+// Un tipo nuevo que aparezca en kot.json se suma al final de Extras.
+for (const t of Object.keys(catalogo.piezas)) {
+  if (OCULTOS.has(t) || TIPOS[t] || PASOS.some((p) => p.partes.includes(t))) continue;
+  PASOS[4].partes.push(t);
+}
+// Un tipo sin piezas (solo "sin": hoy pelos, barbas, caretas...) no se muestra; un paso que queda vacío, tampoco.
+// (Si hay una sola opción, como la cabeza de la cara, no hay nada que elegir.)
+const tienePiezas = (t) => esColor(t) || (catalogo.piezas[t] || []).length >= 2;
+for (const p of PASOS) p.partes = p.partes.filter(tienePiezas);
+for (let i = PASOS.length - 1; i >= 0; i--) if (!PASOS[i].partes.length) PASOS.splice(i, 1);
+parte = PASOS[0].partes[0];
+
+// Encuadres según el tamaño real del Kot: entero, la cabeza (con lugar para sombreros) o los pies.
+kotModelo.updateMatrixWorld(true);
+const cabezaY = huesoCabeza.getWorldPosition(new THREE.Vector3()).y + .2;
+const alto = cabezaY + .3;
+const ENCUADRES = {
+  cuerpo: { pos: [0, alto * .55, alto * 2.5], mira: [0, alto * .5, 0] },
+  cabeza: { pos: [0, cabezaY + .15, 2.3], mira: [0, cabezaY, 0] },
+  pies: { pos: [0, .6, 2.1], mira: [0, .25, 0] },
+};
+let encuadreActual = "cuerpo";
+const encuadre = { pos: new THREE.Vector3(...ENCUADRES.cuerpo.pos), mira: new THREE.Vector3(...ENCUADRES.cuerpo.mira) };
+const objetivo = { pos: new THREE.Vector3(), mira: new THREE.Vector3() };
+
+// --- Girar ------------------------------------------------------------------------------
+// Arrastrar lo gira; deslizar rápido de costado cambia la opción (como en la maqueta B); un toque corto lo saluda.
+// (El ragdoll al tocarlo se sacó del editor el 22/10: se veía mal. Queda en la sala, ragdoll-kot.html.)
+let arrastre = null, velocidadGiro = 0, alturaSalto = 0, velocidadSalto = 0, aplastar = 0, saludoHasta = -1;
+vista.addEventListener("pointerdown", (e) => {
+  vista.setPointerCapture(e.pointerId);
+  arrastre = { x: e.clientX, inicio: e.clientX, inicioY: e.clientY, giroInicial: giro.rotation.y, t: performance.now() };
+});
+vista.addEventListener("pointermove", (e) => {
+  if (!arrastre) return;
+  velocidadGiro = (e.clientX - arrastre.x) * .012;
+  giro.rotation.y += velocidadGiro;
+  arrastre.x = e.clientX;
+});
+function terminarArrastre(e) {
+  if (!arrastre) return;
+  const dx = e.clientX - arrastre.inicio, dy = e.clientY - arrastre.inicioY;
+  const ms = performance.now() - arrastre.t;
+  const corto = Math.abs(dx) < 8 && Math.abs(dy) < 8 && ms < 350;
+  // Deslizón corto de costado: cambia la opción (y se deshace el giro).
+  const deslizon = Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy) * 1.5 && ms < 400;
+  if (deslizon) {
+    giro.rotation.y = arrastre.giroInicial;
+    velocidadGiro = 0;
+    cambiarOpcion(dx < 0 ? 1 : -1);
+  } else if (corto) reaccionar(["saludo", 1]);
+  arrastre = null;
+}
+vista.addEventListener("pointerup", terminarArrastre);
+vista.addEventListener("pointercancel", terminarArrastre);
+
+// Gesto al tocarlo: corto, del pack. Sin clips, el saltito de antes.
+const GESTOS = [["saludo", 2], ["aplauso", 2], ["festejo", 1]];
+let gestoN = 0;
+function reaccionar(gesto) {
+  if (clips) {
+    const [nombre, veces] = gesto || GESTOS[gestoN++ % GESTOS.length];
+    clips.gesto(nombre, veces);
+    return;
+  }
+  if (alturaSalto > .001) return;
+  velocidadSalto = 2.4; aplastar = 1; saludoHasta = reloj.elapsedTime + 1.1;
+}
+
+const reloj = new THREE.Clock();
+function cuadro() {
+  const dt = Math.min(reloj.getDelta(), .05), t = reloj.elapsedTime;
+  if (!arrastre) { giro.rotation.y += velocidadGiro; velocidadGiro *= .92; }
+  velocidadSalto -= 9.8 * dt;
+  alturaSalto = Math.max(0, alturaSalto + velocidadSalto * dt);
+  if (alturaSalto === 0 && velocidadSalto < 0) velocidadSalto = 0;
+  aplastar = Math.max(0, aplastar - dt * 3);
+  const goma = Math.sin(aplastar * Math.PI * 2) * .1 * aplastar;
+  salto.position.y = alturaSalto;
+  salto.scale.set(1 + goma, 1 - goma, 1 + goma);
+  if (clips) clips.actualizar(dt);
+  else {
+    const saludo = saludoHasta > t ? Math.sin(Math.min(1, (saludoHasta - t) / 1.1) * Math.PI) : 0;
+    modelo.animar(t, { saludo });
+  }
+  objetivo.pos.set(...ENCUADRES[encuadreActual].pos);
+  objetivo.mira.set(...ENCUADRES[encuadreActual].mira);
+  // De cerca la cabeza se sale del cuadro con el vaivén de los clips: la cámara la sigue.
+  if (encuadreActual === "cabeza") {
+    const cabeza = huesoCabeza.getWorldPosition(new THREE.Vector3());
+    cabeza.y += .3;
+    objetivo.mira.copy(cabeza);
+    objetivo.pos.set(cabeza.x, cabeza.y + .15, cabeza.z + 3.2);
+  }
+  encuadre.pos.lerp(objetivo.pos, .12);
+  encuadre.mira.lerp(objetivo.mira, .12);
+  camara.position.copy(encuadre.pos);
+  camara.lookAt(encuadre.mira);
+  render.render(escena, camara);
+  requestAnimationFrame(cuadro);
+}
+new ResizeObserver(() => {
+  render.setSize(vista.clientWidth, vista.clientHeight, false);
+  camara.aspect = vista.clientWidth / vista.clientHeight;
+  camara.updateProjectionMatrix();
+}).observe(vista);
+
+// --- Menú: pasos, partes, opciones --------------------------------------------------------
+const $ = (id) => document.getElementById(id);
+const mini = (t, id) => `${RUTA_MINIS}${t}_${id}.png?v=${catalogo.version}`;
+const recordar = () => { historial.push(copiar(kot)); if (historial.length > 60) historial.shift(); };
+// Un perfil de antes de separar la cara: sus ojos, cejas y boca salen de la cara vieja.
+const elegida = (t) => kot.piezas?.[t] ?? catalogo.migrar_caras?.[kot.piezas?.caras]?.[t] ?? catalogo.inicial[t];
+// Piezas iguales en todo menos el color (los sombreros del pack): una miniatura por forma y abajo se elige el color.
+const formaDe = (t, id) => (catalogo.piezas[t] || []).find((p) => p.id === id)?.forma;
+const variantesDe = (t, id) => { const f = formaDe(t, id); return f ? catalogo.piezas[t].filter((p) => p.forma === f) : []; };
+const nombreDe = (t) => NOMBRE_PIEZA[t] || t;
+const unirLista = (lista) => lista.length > 1 ? `${lista.slice(0, -1).join(", ")} y ${lista[lista.length - 1]}` : lista[0];
+/** "pelo_afro" → "Pelo afro", "Face_03" → "Face 03": provisional, el catálogo todavía no trae nombre lindo. */
+const bonito = (id) => { const t = id.replace(/_/g, " ").trim(); return t[0].toUpperCase() + t.slice(1); };
+
+// --- Choques entre piezas -----------------------------------------------------------------
+// La grilla marca en naranja lo que chocaría con lo que ya está puesto; al elegir una pieza que
+// choca, la otra se saca sola. Con pelo y sombrero se prueba primero un pelo más corto.
+/** Tipos cuyo nombre es en plural: el verbo del aviso tiene que concordar. */
+const PLURALES = new Set(["anteojos"]);
+
+function primerChoquePuesto(tipo, id) {
+  const puestas = {};
+  for (const otro of TIPOS_CON_CHOQUE) puestas[otro] = elegida(otro);
+  return choques.primerChoque(tipo, id, puestas);
+}
+
+/**
+ * Un pelo que no choca con nada de lo puesto: el más corto (menor caja) que entra.
+ * Primero se busca del mismo color: los pelos con color propio ("Black Hair", "Blonde Hair"...)
+ * y después los que siguen el color global (material "kot_pelo", que se tiñe con el color elegido).
+ */
+function peloCompatible(peloActual) {
+  const lista = (catalogo.piezas.pelos || []).filter((p) => !p.vacia && !choques.rota("pelos", p.id));
+  const colorDe = (id) => choques.material("pelos", id) === "kot_pelo" ? kot.colorPelo : choques.color("pelos", id);
+  const colorActual = colorDe(peloActual);
+  // 0 = otro color, 1 = mismo color.
+  const prioridad = (id) => (colorDe(id) === colorActual ? 1 : 0);
+  const ordenados = lista.slice().sort((a, b) => prioridad(b.id) - prioridad(a.id)
+    || choques.volumen("pelos", a.id) - choques.volumen("pelos", b.id)
+    || choques.alto("pelos", a.id) - choques.alto("pelos", b.id));
+  for (const p of ordenados) if (!primerChoquePuesto("pelos", p.id)) return p.id;
+  return null;
+}
+
+const avisoChoque = { temporizador: 0 };
+function mostrarAvisoChoque(texto) {
+  const caja = $("aviso-choque");
+  $("aviso-choque-texto").textContent = texto;
+  caja.classList.add("ver");
+  clearTimeout(avisoChoque.temporizador);
+  avisoChoque.temporizador = setTimeout(() => caja.classList.remove("ver"), 5000);
+}
+function ocultarAvisoChoque() {
+  clearTimeout(avisoChoque.temporizador);
+  $("aviso-choque").classList.remove("ver");
+}
+
+/**
+ * Pone una pieza y resuelve los choques: la que ya estaba se saca sola.
+ * Excepción de la consigna: con pelo y sombrero no se saca el pelo, se busca el pelo más parecido
+ * (el más corto del mismo color) que no estorbe; si no hay ninguno, el pelo se saca.
+ * Devuelve qué se sacó (para el aviso).
+ */
+function resolverChoques(tipo, id) {
+  const sacadas = [];
+  let peloCambiado = false;
+  if (id === "sin") { kot.piezas[tipo] = "sin"; return { sacadas, peloCambiado }; }
+  kot.piezas[tipo] = id;
+  for (const otro of TIPOS_CON_CHOQUE) {
+    if (otro === tipo) continue;
+    const actual = elegida(otro);
+    if (actual === "sin" || !choca(tipo, id, otro, actual)) continue;
+    if (otro === "pelos" && tipo === "sombreros") {
+      // El sombrero gana: el pelo se cambia por el más corto del mismo color que no estorbe.
+      const alternativa = peloCompatible(actual);
+      if (alternativa) { kot.piezas.pelos = alternativa; peloCambiado = true; }
+      else { kot.piezas.pelos = "sin"; sacadas.push(otro); }
+    } else {
+      kot.piezas[otro] = "sin";
+      sacadas.push(otro);
+    }
+  }
+  return { sacadas, peloCambiado };
+}
+
+/**
+ * Orden en que se aplican las piezas cuando no es el usuario el que elige (carga, azar):
+ * la última que se aplica pisa a las anteriores. El sombrero va al final porque
+ * gana contra el pelo (y el pelo se cambia por uno más corto en vez de sacarse).
+ */
+const ORDEN_RESOLUCION = ["espalda", "pelos", "barbas", "anteojos", "caretas", "sombreros"];
+function resolverTodo() {
+  for (const t of ORDEN_RESOLUCION) resolverChoques(t, elegida(t));
+}
+
+/** El aviso: "Saqué los anteojos: chocaban con la careta". */
+function textoChoque(tipo, sacadas, peloCambiado) {
+  const cambios = [];
+  if (sacadas.length) cambios.push(`saqué ${unirLista(sacadas.map(nombreDe))}`);
+  if (peloCambiado) cambios.push("cambié el pelo por uno más corto");
+  let frase = cambios.join(" y ");
+  frase = frase[0].toUpperCase() + frase.slice(1);
+  const piezas = sacadas.length + (peloCambiado ? 1 : 0);
+  const plural = piezas > 1 || (sacadas.length === 1 && PLURALES.has(sacadas[0]));
+  return `${frase}: ${plural ? "chocaban" : "chocaba"} con ${nombreDe(tipo)}`;
+}
+
+function elegirPieza(tipo, id) {
+  recordar();
+  const { sacadas, peloCambiado } = resolverChoques(tipo, id);
+  aplicar();
+  pintar();
+  if (!sacadas.length && !peloCambiado) return;
+  mostrarAvisoChoque(textoChoque(tipo, sacadas, peloCambiado));
+}
+
+// --- Opciones de la parte abierta ---------------------------------------------------------
+/** La pestaña de color abierta (0 = primera, 1 = segunda); arranca en la que tiene el color puesto. */
+function paletaDe(p) {
+  if (paleta[p] == null) {
+    const valor = kot[PALETAS[p].clave];
+    paleta[p] = PALETAS[p].tabs.findIndex(([, lista]) => lista.some(([c]) => c === valor)) === 1 ? 1 : 0;
+  }
+  return paleta[p];
+}
+/** La lista de opciones de la parte: piezas del catálogo (con "sin") o las muestras de color. */
+function opcionesDe(p) {
+  if (esColor(p)) return PALETAS[p].tabs[paletaDe(p)][1];
+  const vistas = new Set();
+  return (catalogo.piezas[p] || []).filter((o) => !o.forma || (!vistas.has(o.forma) && vistas.add(o.forma)));
+}
+function indiceActual(p) {
+  if (esColor(p)) return opcionesDe(p).findIndex(([c]) => c === kot[PALETAS[p].clave]);
+  const f = formaDe(p, elegida(p));
+  return opcionesDe(p).findIndex((o) => o.id === elegida(p) || (f && o.forma === f));
+}
+function ponerOpcion(p, op) {
+  if (esColor(p)) {
+    recordar();
+    kot[PALETAS[p].clave] = op[0];
+    aplicar();
+    pintarPanel();
+    return;
+  }
+  elegirPieza(p, op.id);
+}
+/** ‹ › (y el deslizón sobre el fondo): pasa a la opción de al lado, dando la vuelta. */
+function cambiarOpcion(dir) {
+  const lista = opcionesDe(parte);
+  if (!lista.length) return;
+  const i = indiceActual(parte);
+  const j = i < 0 ? (dir > 0 ? 0 : lista.length - 1) : (i + dir + lista.length) % lista.length;
+  ponerOpcion(parte, lista[j]);
+}
+
+// --- Pintar la pantalla -------------------------------------------------------------------
+function pintarPasos() {
+  const caja = $("pasos");
+  caja.innerHTML = "";
+  PASOS.forEach((p, i) => {
+    const b = document.createElement("button");
+    b.className = i === pasoActual ? "ahora" : i < pasoActual ? "hecho" : "";
+    b.innerHTML = `<i></i>${p.corto}`;
+    b.onclick = () => irPaso(i);
+    caja.appendChild(b);
+  });
+}
+
+function pintarCabecera() {
+  $("titulo").textContent = PASOS[pasoActual].nombre;
+  if (!embebido) $("subtitulo").textContent = `Paso ${pasoActual + 1} de ${PASOS.length} · deslizá al costado`;
+  $("atras").disabled = pasoActual === 0;
+  const siguiente = PASOS[pasoActual + 1];
+  $("siguiente").textContent = siguiente ? `${siguiente.corto} →` : "Siguiente →";
+  $("siguiente").style.display = siguiente ? "" : "none";
+}
+
+const partesDePaso = () => PASOS[pasoActual].partes;
+
+function pintarSub() {
+  const caja = $("sub");
+  caja.innerHTML = "";
+  const partes = partesDePaso();
+  if (partes.length < 2) return;
+  for (const p of partes) {
+    const b = document.createElement("button");
+    b.className = "chip" + (p === parte ? " activo" : "");
+    b.textContent = INFO(p).nombre;
+    b.onclick = () => { parte = p; fijarEncuadre(); pintar(); };
+    caja.appendChild(b);
+  }
+}
+
+function pintarPanel() {
+  const panel = $("panel");
+  panel.innerHTML = "";
+
+  if (esColor(parte)) {
+    pintarColores(panel, parte);
+    pintarCartel();
+    return;
+  }
+
+  const fila = document.createElement("div");
+  fila.className = "fila";
+  const forma = formaDe(parte, elegida(parte));
+  for (const p of opcionesDe(parte)) {
+    const b = document.createElement("button");
+    b.className = "mini";
+    b.dataset.id = p.id;
+    if (p.vacia) b.classList.add("sin");
+    else b.innerHTML = `<img src="${mini(parte, p.id)}" alt="${bonito(p.id)}" loading="lazy">`;
+    b.title = p.vacia ? "Sin" : bonito(p.id);
+    b.classList.toggle("elegida", p.id === elegida(parte) || (!!forma && p.forma === forma));
+    // Puntito naranja: esta pieza se atravesaría con algo de lo que ya está puesto (se puede elegir igual).
+    if (!p.vacia && p.id !== elegida(parte)) {
+      const con = primerChoquePuesto(parte, p.id);
+      if (con) {
+        const punto = document.createElement("span");
+        punto.className = "punto-choque";
+        punto.title = `Choca con ${nombreDe(con)}`;
+        b.appendChild(punto);
+        b.title += ` · choca con ${nombreDe(con)}`;
+      }
+    }
+    b.onclick = () => elegirPieza(parte, p.id);
+    fila.appendChild(b);
+  }
+  panel.appendChild(fila);
+  // La elegida siempre a la vista.
+  const activa = fila.querySelector(".elegida");
+  if (activa) fila.scrollLeft = Math.max(0, activa.offsetLeft - 80);
+  if (RECOLOR.includes(parte) && elegida(parte) !== "sin") pintarPartes(panel, parte);
+  const color = COLOR_DE[parte];
+  if (color && elegida(parte) !== "sin") {
+    const titulo = document.createElement("div");
+    titulo.className = "seccion";
+    titulo.textContent = "Color";
+    panel.appendChild(titulo);
+    pintarColores(panel, color, true);
+  }
+  pintarCartel();
+}
+
+/** Los colores de cada parte de la prenda puesta (máximo 2, de kot.json): "Color" si tiene una, "Color 1" y
+ *  "Color 2" si tiene dos. Cada parte: sus pestañas de paleta y el círculo tachado para volver al de fábrica. */
+const pestanaParte = {};
+function pintarPartes(panel, tipo) {
+  const pieza = (catalogo.piezas[tipo] || []).find((p) => p.id === elegida(tipo));
+  const partes = pieza?.partes || [];
+  const elegidos = coloresDe(kot, tipo);
+  partes.forEach((parte, i) => {
+    // El pelo con tonos de pelo; la colita (color 2), como la ropa.
+    const tabs = tipo === "pelos" && i === 0 ? TABS_PELO : TABS_ROPA;
+    const titulo = document.createElement("div");
+    titulo.className = "seccion";
+    titulo.textContent = partes.length > 1 ? `Color ${i + 1}` : "Color";
+    panel.appendChild(titulo);
+    const clave = tipo + i;
+    if (pestanaParte[clave] == null) pestanaParte[clave] = tabs.findIndex(([, l]) => l.some(([c]) => c === elegidos[i])) === 1 ? 1 : 0;
+    const sub = document.createElement("div");
+    sub.className = "sub";
+    sub.style.padding = "0";
+    tabs.forEach(([nombre], t) => {
+      const b = document.createElement("button");
+      b.className = "chip" + (pestanaParte[clave] === t ? " activo" : "");
+      b.textContent = nombre;
+      b.onclick = () => { pestanaParte[clave] = t; pintarPanel(); };
+      sub.appendChild(b);
+    });
+    panel.appendChild(sub);
+    const caja = document.createElement("div");
+    caja.className = "muestras linea";
+    const poner = (c) => {
+      recordar();
+      const nuevos = [...coloresDe(kot, tipo)];
+      nuevos[i] = c;
+      kot.colores = { ...(kot.colores || {}), [tipo]: nuevos };
+      if (tipo === "remeras") delete kot.colorRemera;
+      if (tipo === "pantalones") delete kot.colorPantalon;
+      if (tipo === "pelos") kot.colorPelo = nuevos[0] || KOT_INICIAL.colorPelo;
+      aplicar();
+      pintarPanel();
+    };
+    const fabrica = document.createElement("button");
+    fabrica.className = "muestra fabrica" + (!elegidos[i] ? " elegida" : "");
+    fabrica.style.setProperty("--c", parte.c);
+    fabrica.title = "Como viene";
+    fabrica.setAttribute("aria-label", "Como viene");
+    fabrica.onclick = () => poner(null);
+    caja.appendChild(fabrica);
+    for (const [c, nombre] of tabs[pestanaParte[clave]][1]) {
+      const b = document.createElement("button");
+      b.className = "muestra" + (elegidos[i] === c ? " elegida" : "");
+      b.style.setProperty("--c", c);
+      b.title = nombre;
+      b.setAttribute("aria-label", nombre);
+      b.onclick = () => poner(c);
+      caja.appendChild(b);
+    }
+    panel.appendChild(caja);
+  });
+}
+
+/** Las muestras de una paleta (con sus pestañas si tiene dos). `p` es la clave de PALETAS. */
+function pintarColores(panel, p, linea = false) {
+  const tabs = PALETAS[p].tabs;
+  if (tabs.length > 1) {
+    const sub = document.createElement("div");
+    sub.className = "sub";
+    sub.style.padding = "0";
+    tabs.forEach(([nombre], i) => {
+      const b = document.createElement("button");
+      b.className = "chip" + (paletaDe(p) === i ? " activo" : "");
+      b.textContent = nombre;
+      b.onclick = () => { paleta[p] = i; pintarPanel(); };
+      sub.appendChild(b);
+    });
+    panel.appendChild(sub);
+  }
+  const valor = kot[PALETAS[p].clave];
+  const caja = document.createElement("div");
+  caja.className = "muestras" + (linea ? " linea" : "");
+  for (const [c, nombre] of opcionesDe(p)) {
+    const b = document.createElement("button");
+    b.className = "muestra" + (valor === c ? " elegida" : "");
+    b.style.setProperty("--c", c);
+    b.title = nombre;
+    b.setAttribute("aria-label", nombre);
+    b.onclick = () => ponerOpcion(p, [c, nombre]);
+    caja.appendChild(b);
+  }
+  panel.appendChild(caja);
+}
+
+function pintarCartel() {
+  const lista = opcionesDe(parte);
+  const i = indiceActual(parte);
+  const cartel = $("cartel");
+  if (!lista.length) { cartel.textContent = ""; return; }
+  const nombre = esColor(parte)
+    ? (lista[i] ? lista[i][1] : "")
+    : (i < 0 ? "" : lista[i]?.vacia ? "Sin" : bonito(lista[i]?.id || ""));
+  const titulo = esColor(parte) ? PALETAS[parte].tabs[paletaDe(parte)][0] : INFO(parte).nombre;
+  cartel.innerHTML = `${titulo}${nombre ? ` <b>${nombre}</b>` : ""}${i < 0 ? "" : ` · ${i + 1} de ${lista.length}`}`;
+}
+
+function fijarEncuadre() { encuadreActual = INFO(parte).encuadre; }
+function pintar() {
+  pintarCabecera(); pintarPasos(); pintarSub(); pintarPanel();
+}
+function irPaso(i) {
+  pasoActual = Math.max(0, Math.min(PASOS.length - 1, i));
+  parte = PASOS[pasoActual].partes[0];
+  fijarEncuadre();
+  pintar();
+}
+
+// --- Botones ------------------------------------------------------------------------------
+for (const id of ["anterior", "siguiente-op"]) {
+  const b = $(id);
+  b.addEventListener("pointerdown", (e) => e.stopPropagation());
+  b.onclick = () => cambiarOpcion(id === "anterior" ? -1 : 1);
+}
+$("atras").onclick = () => irPaso(pasoActual - 1);
+$("siguiente").onclick = () => irPaso(pasoActual + 1);
+
+$("azar").onclick = () => {
+  recordar();
+  // El azar cambia las piezas, no la piel ni el pelo que ya eligió.
+  kot = { ...kotAlAzar(catalogo), colorCuerpo: kot.colorCuerpo, colorPelo: kot.colorPelo, colorBarba: kot.colorBarba,
+    colorOjos: kot.colorOjos, colorCejas: kot.colorCejas, colores: kot.colores };
+  // El azar también tiene que salir prolijo: se pasa por la misma regla de choques.
+  resolverTodo();
+  aplicar();
+  pintar();
+};
+
+function deshacer() {
+  if (!historial.length) return;
+  kot = historial.pop();
+  aplicar();
+  pintar();
+  ocultarAvisoChoque();
+}
+$("deshacer").onclick = deshacer;
+$("aviso-choque-deshacer").onclick = deshacer;
+
+// --- Guardar (en cualquier paso) y sala ----------------------------------------------------
+// `origen` lo pone la puerta al abrir el editor: "inicio" o "puerta".
+const volverALaPuerta = () => { location.href = "../index.html?origen=editor"; };
+
+function guardar() {
+  guardarBorrador(kot);
+  // Embebido: la puerta guarda el Kot en el perfil, pero no cierra el editor (se sigue editando o se va a la sala).
+  if (embebido) avisarAlPadre("kot-guardado", { kot });
+  $("sala").classList.remove("oculto");
+  const boton = $("listo");
+  boton.textContent = "Guardado ✓";
+  clearTimeout(guardar.temporizador);
+  guardar.temporizador = setTimeout(() => { boton.textContent = "Guardar"; }, 1400);
+}
+$("listo").onclick = guardar;
+
+$("sala").onclick = () => {
+  // Se guarda de nuevo por si cambió algo después del último guardado: la sala abre el Kot del borrador.
+  guardarBorrador(kot);
+  if (embebido) avisarAlPadre("kot-guardado", { kot });
+  if (embebido) window.open("ragdoll-kot.html", "_blank");
+  else location.href = "ragdoll-kot.html";
+};
+
+// --- Arranque -----------------------------------------------------------------------------
+aplicar();
+pintar();
+cuadro();
+// Un borrador guardado antes de esta regla puede tener piezas que se atraviesan: se arreglan al abrir.
+resolverTodo();
+aplicar();
+pintar();
+
+// ?debug-choques: tabla de cuántas combinaciones de cada pareja se atraviesan (para revisar los umbrales).
+if (parametros.has("debug-choques")) {
+  const filas = choques.tabla();
+  console.log("Choques por pareja (de más a menos):", filas);
+  console.table(filas);
+}
+
+// Para depurar desde la consola del navegador (y para probar piezas sin tocar la UI).
+window.__kot = {
+  get kot() { return kot; }, kotModelo, catalogo, piezas, aplicar, render, modelo, giro, choques, clips, camara,
+  get parte() { return parte; }, get paso() { return pasoActual; }, irPaso, cambiarOpcion,
+};
+</script>
+</body>
+</html>

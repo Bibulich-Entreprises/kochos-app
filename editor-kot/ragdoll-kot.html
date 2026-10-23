@@ -1,0 +1,845 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Ragdoll del Kot</title>
+<!-- Prueba de ragdoll con el Kot real (el que armaste en editor-kot.html, guardado en el navegador).
+     Mismo esquema que consola/kochOS/kot/muneco.gd: cápsulas con articulaciones, "músculos" que lo
+     sostienen en pose y una fuerza de equilibrio. Al empujarlo se afloja, cae como un trapo y se levanta solo.
+     Física: cannon-es. Las cápsulas se calculan solas desde la malla del Kot (cuerpo y cabeza del Stickman). -->
+<style>
+:root {
+  --fondo: #eef2f6; --tarjeta: rgba(255, 255, 255, .92); --tinta: #1f2a36; --suave: #6f7d8c; --borde: rgba(31, 42, 54, .1);
+  --acento: #2f6ff0; --hundido: #e3e9ef;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --fondo: #10161f; --tarjeta: rgba(31, 40, 54, .92); --tinta: #e9eef5; --suave: #8693a5; --borde: rgba(255, 255, 255, .08);
+    --acento: #4f86ff; --hundido: #18202b; }
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--fondo); color: var(--tinta);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif; overscroll-behavior: none; touch-action: none;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+body { position: fixed; inset: 0; }
+button, a { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; text-decoration: none; }
+canvas { display: block; position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; }
+
+.barra { position: fixed; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: 10px;
+  padding: max(10px, env(safe-area-inset-top)) 16px 8px; pointer-events: none; }
+.barra > * { pointer-events: auto; }
+.barra h1 { margin: 0; font-size: 20px; letter-spacing: -.4px; }
+.barra small { display: block; color: var(--suave); font-size: 12px; }
+.icono { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 50%; background: var(--tarjeta); border: 1px solid var(--borde);
+  font-size: 18px; display: grid; place-items: center; backdrop-filter: blur(8px); }
+
+.estado { position: fixed; top: calc(max(10px, env(safe-area-inset-top)) + 54px); left: 16px; padding: 5px 11px; border-radius: 999px;
+  background: var(--tarjeta); border: 1px solid var(--borde); font-size: 12px; font-weight: 700; color: var(--suave);
+  backdrop-filter: blur(8px); transition: color .2s; }
+.estado.caido { color: #e5484d; }
+.estado.levantando { color: #d9822b; }
+.estado.pie { color: #2f9e5b; }
+
+.panel { position: fixed; left: 0; right: 0; bottom: 0; padding: 10px 16px max(14px, env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; gap: 10px; max-width: 520px; margin: 0 auto; }
+.botones { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.botones button { padding: 11px 4px; border-radius: 16px; background: var(--tarjeta); border: 1px solid var(--borde); font-size: 14px; font-weight: 700;
+  backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; gap: 2px; transition: transform .1s; }
+.botones button:active { transform: scale(.95); }
+.botones button span { font-size: 20px; }
+.botones button.activo { background: var(--acento); color: #fff; border-color: transparent; }
+.cargando { position: fixed; inset: 0; display: grid; place-items: center; color: var(--suave); font-size: 15px; }
+</style>
+<script type="importmap">{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+  "cannon-es": "https://unpkg.com/cannon-es@0.20.0/dist/cannon-es.js"
+} }</script>
+</head>
+<body>
+  <div class="cargando" id="cargando">Armando tu Kot…</div>
+  <header class="barra">
+    <a class="icono" href="editor-kot.html" aria-label="Volver al editor">←</a>
+    <div><h1>Ragdoll</h1><small>Tocá tu Kot para empujarlo · tocá una caja y la busca · arrastrá para revolear</small></div>
+  </header>
+  <div class="estado pie" id="estado">De pie</div>
+  <section class="panel">
+    <div class="botones">
+      <button id="chocala"><span>✋</span>Chocala</button>
+      <button id="tirar"><span>🪂</span>Desde arriba</button>
+      <button id="levantar"><span>🧍</span>Levantar</button>
+      <button id="trapo"><span>🫠</span>Trapo</button>
+      <button id="otro"><span>➕</span>Otro Kot</button>
+    </div>
+  </section>
+
+<script>
+  // En el celular no hay consola: si algo falla, se ve en la pantalla.
+  addEventListener("error", (e) => { const c = document.getElementById("cargando"); if (c) c.textContent = "Error: " + e.message; });
+  addEventListener("unhandledrejection", (e) => { const c = document.getElementById("cargando"); if (c) c.textContent = "Error: " + (e.reason?.message || e.reason); });
+  // Safari: sin zoom con dos dedos ni doble toque sobre la página.
+  for (const t of ["gesturestart", "gesturechange", "dblclick"]) document.addEventListener(t, (e) => e.preventDefault(), { passive: false });
+  document.addEventListener("touchmove", (e) => e.preventDefault(), { passive: false });
+</script>
+<script type="module">
+import * as THREE from "three";
+import * as CANNON from "cannon-es";
+import { cargarKot, cargarBorrador, KOT_INICIAL, copiar, kotAlAzar, entornoDeEstudio } from "./kot-modelo.js";
+import { Cerebro, CerebroSala, CARACTERES } from "./kot-cerebro.js";
+
+// Sala (por defecto): tu Kot solo, como en el celular. ?modo=plaza: la Kots House con varios Kots sueltos.
+const PLAZA_MODO = new URLSearchParams(location.search).get("modo") === "plaza";
+
+// --- Ajustes del muñeco (los mismos números que muneco.gd) --------------------------------
+const AJ = { rigidez: 400, amortiguacion: 40, equilibrio: 3, iter: 20 };
+const TIEMPO_CAIDO = 1.4, TIEMPO_LEVANTARSE = 1.3;
+// Tono en el piso: no se sostiene, pero tampoco se arruga como una bolsa (como en Gang Beasts).
+const TONO_CAIDO = .3;
+// Caminar: cuánto se abre cada pierna (radianes) y cuánto avanza el cuerpo por ciclo completo (dos pasos).
+const ZANCADA = .38, LARGO_CICLO = .62;
+// Caminando, la pelvis baja un poco: con las piernas abiertas son más cortas, y si no, los pies no tocan el piso.
+const BAJADA_CAMINANDO = .045;
+const PASO = 1 / 120;
+const SUELO = 1;   // grupo de colisión del piso y las cajas; cada Kot tiene el suyo
+
+// Cada parte del ragdoll: qué huesos del Kot mueve, entre qué juntas va la cápsula, masa y límites de la articulación
+// (cono = cuánto se dobla; giro = cuánto rota sobre su largo, hoy sin tope: ver más abajo). "lado" se calcula solo (+1 a la izquierda del Kot).
+// Huesos del Stickman (Auto-Rig Pro): los que no están en ninguna lista (dedos, puntas) van con la parte de su padre.
+const PARTES = [
+  { n: "pelvis", huesos: ["root_x", "spine_01_x"], desde: "spine_01_x", hasta: "spine_02_x", masa: 10 },
+  { n: "torso", padre: "pelvis", huesos: ["spine_02_x", "spine_03_x", "shoulder_l", "shoulder_r"], desde: "spine_02_x", hasta: "neck_x", masa: 14, cono: .4, giro: .4 },
+  { n: "cabeza", padre: "torso", huesos: ["neck_x", "head_x"], desde: "neck_x", arriba: true, masa: 5, cono: .5, giro: .6 },
+  { n: "brazo_izq", padre: "torso", huesos: ["c_arm_twist_offset_l", "arm_stretch_l"], desde: "c_arm_twist_offset_l", hasta: "forearm_stretch_l", masa: 2.5, cono: 1.5, giro: .5 },
+  { n: "antebrazo_izq", padre: "brazo_izq", huesos: ["forearm_stretch_l", "forearm_twist_l", "hand_l"], desde: "forearm_stretch_l", hasta: "hand_l", masa: 1.8, cono: 1.3, giro: .2 },
+  { n: "brazo_der", padre: "torso", huesos: ["c_arm_twist_offset_r", "arm_stretch_r"], desde: "c_arm_twist_offset_r", hasta: "forearm_stretch_r", masa: 2.5, cono: 1.5, giro: .5 },
+  { n: "antebrazo_der", padre: "brazo_der", huesos: ["forearm_stretch_r", "forearm_twist_r", "hand_r"], desde: "forearm_stretch_r", hasta: "hand_r", masa: 1.8, cono: 1.3, giro: .2 },
+  { n: "muslo_izq", padre: "pelvis", huesos: ["thigh_twist_l", "thigh_stretch_l"], desde: "thigh_twist_l", hasta: "leg_stretch_l", masa: 5, cono: 1.0, giro: .4 },
+  { n: "pierna_izq", padre: "muslo_izq", huesos: ["leg_stretch_l", "leg_twist_l", "foot_l"], desde: "leg_stretch_l", hasta: "foot_l", masa: 3.5, cono: 1.2, giro: .15 },
+  { n: "muslo_der", padre: "pelvis", huesos: ["thigh_twist_r", "thigh_stretch_r"], desde: "thigh_twist_r", hasta: "leg_stretch_r", masa: 5, cono: 1.0, giro: .4 },
+  { n: "pierna_der", padre: "muslo_der", huesos: ["leg_stretch_r", "leg_twist_r", "foot_r"], desde: "leg_stretch_r", hasta: "foot_r", masa: 3.5, cono: 1.2, giro: .15 },
+];
+
+const oscuro = matchMedia("(prefers-color-scheme: dark)").matches;
+const COLORES = oscuro
+  ? { cielo: "#141c27", piso: "#2a3545", linea: "#334155", cajas: ["#4f86ff", "#f2a33a", "#43c59e", "#ff6b6b"] }
+  : { cielo: "#e4ebf3", piso: "#cfd8e3", linea: "#bcc8d6", cajas: ["#5b8def", "#f4b04c", "#4cc9a0", "#ff7b7b"] };
+
+// --- Escena -------------------------------------------------------------------------------
+const render = new THREE.WebGLRenderer({ antialias: true });
+render.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+render.outputColorSpace = THREE.SRGBColorSpace;
+render.shadowMap.enabled = true;
+render.shadowMap.type = THREE.PCFShadowMap;
+document.body.prepend(render.domElement);
+
+const escena = new THREE.Scene();
+escena.background = new THREE.Color(COLORES.cielo);
+escena.fog = new THREE.Fog(COLORES.cielo, 9, 22);
+const camara = new THREE.PerspectiveCamera(40, 1, .1, 60);
+entornoDeEstudio(render, escena);
+escena.add(new THREE.HemisphereLight(0xffffff, 0x8899aa, oscuro ? 1.1 : 1.5));
+const sol = new THREE.DirectionalLight(0xffffff, oscuro ? 1.4 : 1.9);
+sol.castShadow = true;
+sol.shadow.mapSize.set(512, 512);
+Object.assign(sol.shadow.camera, { left: -4, right: 4, top: 4, bottom: -4, near: .5, far: 20 });
+sol.shadow.bias = -.0008;
+escena.add(sol, sol.target);
+
+// Piso low poly: un disco grande facetado con un anillo marcado.
+const piso = new THREE.Mesh(new THREE.CylinderGeometry(14, 14.4, .3, 18), new THREE.MeshLambertMaterial({ color: COLORES.piso, flatShading: true }));
+piso.position.y = -.15;
+piso.receiveShadow = true;
+escena.add(piso);
+const anillo = new THREE.Mesh(new THREE.RingGeometry(2.4, 2.5, 18), new THREE.MeshBasicMaterial({ color: COLORES.linea }));
+anillo.rotation.x = -Math.PI / 2;
+anillo.position.y = .002;
+escena.add(anillo);
+
+// --- Física ---------------------------------------------------------------------------------
+const mundo = new CANNON.World({ gravity: new CANNON.Vec3(0, -9.8, 0) });
+mundo.allowSleep = false;
+mundo.solver.iterations = 20;
+mundo.defaultContactMaterial.friction = .6;
+mundo.defaultContactMaterial.restitution = 0;
+const suelo = new CANNON.Body({ mass: 0, shape: new CANNON.Plane(), collisionFilterGroup: SUELO });
+suelo.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+mundo.addBody(suelo);
+
+// Cajas para que se tropiece y tenga contra qué caer.
+const cajas = [];
+[[1.6, .5, -.4, .6, .5, .6], [-1.7, .35, .3, .7, .35, .45], [.2, .25, -1.8, 1.6, .25, .5], [-1, .3, -1.4, .45, .3, .45]].forEach(([x, y, z, a, b, c], i) => {
+  const cuerpo = new CANNON.Body({ mass: 6 + a * b * c * 40, position: new CANNON.Vec3(x, y, z), shape: new CANNON.Box(new CANNON.Vec3(a / 2, b, c / 2)),
+    collisionFilterGroup: SUELO, collisionFilterMask: -1 });
+  cuerpo.quaternion.setFromEuler(0, i * .7, 0);
+  mundo.addBody(cuerpo);
+  const malla = new THREE.Mesh(new THREE.BoxGeometry(a, b * 2, c), new THREE.MeshLambertMaterial({ color: COLORES.cajas[i % 4], flatShading: true }));
+  malla.castShadow = malla.receiveShadow = true;
+  malla.userData.cuerpo = cuerpo;
+  escena.add(malla);
+  cajas.push({ cuerpo, malla, inicio: { p: cuerpo.position.clone(), q: cuerpo.quaternion.clone() } });
+});
+
+// --- Cuentas -----------------------------------------------------------------------------------
+const aVec = (v) => new CANNON.Vec3(v.x, v.y, v.z);
+const aQuat = (q) => new CANNON.Quaternion(q.x, q.y, q.z, q.w);
+const sumar = (a, b) => new CANNON.Mat3(a.elements.map((x, i) => x + b.elements[i]));
+const _q = new THREE.Quaternion(), _e = new THREE.Euler(0, 0, 0, "YXZ");
+const pose = (x, y, z) => aQuat(_q.setFromEuler(_e.set(x, y, z, "YXZ")));
+
+/** Torque que lleva el cuerpo hacia la orientación objetivo (resorte + freno), con la inercia real en los tres ejes. */
+function torqueHacia(cuerpo, objetivo, giroReferencia, inercia, rigidez, amortiguacion) {
+  const delta = objetivo.mult(cuerpo.quaternion.inverse());
+  if (delta.w < 0) { delta.x *= -1; delta.y *= -1; delta.z *= -1; delta.w *= -1; }
+  const seno = Math.hypot(delta.x, delta.y, delta.z);
+  const error = new CANNON.Vec3();
+  if (seno > 1e-5) error.set(delta.x, delta.y, delta.z).scale(2 * Math.atan2(seno, delta.w) / seno, error);
+  const giro = cuerpo.angularVelocity.vsub(giroReferencia);
+  return inercia.vmult(error.scale(rigidez).vsub(giro.scale(amortiguacion)));
+}
+
+/** Une dos cuerpos solo para que no choquen entre sí (cannon-es pide un update aunque no haga nada). */
+class SinChoque extends CANNON.Constraint { update() {} }
+
+/** ¿Alguna esfera de un cuerpo pisa alguna del otro (con un margen)? */
+function seTocan(a, b) {
+  for (let i = 0; i < a.shapes.length; i++) for (let j = 0; j < b.shapes.length; j++) {
+    const pa = a.position.vadd(a.shapeOffsets[i]), pb = b.position.vadd(b.shapeOffsets[j]);
+    if (pa.distanceTo(pb) < a.shapes[i].radius + b.shapes[j].radius + .03) return true;
+  }
+  return false;
+}
+
+function percentil(lista, p) {
+  const orden = [...lista].sort((a, b) => a - b);
+  return orden[Math.min(orden.length - 1, Math.floor(p * orden.length))];
+}
+
+// --- Ragdoll del Kot ------------------------------------------------------------------------
+const kots = [];
+// Músculos al 200%: con menos, el muñeco se dobla de más y se traba al levantarse.
+const musculos = 2;
+// Las cápsulas de la física se pueden ver desde la consola: __ragdoll.verCapsulas(true).
+let trapo = false, verCapsulas = false;
+
+class Ragdoll {
+  constructor(modelo, perfil, indice, x, z) {
+    this.modelo = modelo;
+    this.grupo = 2 << indice;
+    this.estado = "pie"; this.reloj = 0; this.t = 0; this.fase = Math.random() * 6.28; this.rumbo = 0; this.agarrado = false;
+    this.casa = { x, z };   // su lugar en la plaza
+    this.caminando = false; this.paso_ = 0;   // paso_: fase del ciclo de caminar
+    // Lo que maneja el cerebro (kot-cerebro.js): adónde ir, qué mirar, hacia dónde girar, trompadas y saludos.
+    this.objetivo = null; this.rapidez = .9; this.mirando = null; this.hacia = null; this.puno = null; this.brazoArriba = 0;
+    this.golpe = null; this.memoria = {}; this.cerebro = null;
+    this.sentado = false; this.chocala = false; this.festejo = 0; this.zapateo = false; this.cargando = null;
+    const kot = modelo.kotModelo;
+    modelo.aplicar(perfil);
+    escena.add(kot);
+    kot.updateMatrixWorld(true);
+    kot.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+
+    const hueso = (n) => kot.getObjectByName(n);
+    const junta = (n) => hueso(n).getWorldPosition(new THREE.Vector3());
+
+    // Vértices de la piel (con las formas y la pose ya aplicadas), repartidos por la parte que más los mueve.
+    const deParte = {};
+    for (const p of PARTES) for (const h of p.huesos) deParte[h] = p.n;
+    // Dedos y puntas: con la parte del hueso padre más cercano que tenga una.
+    kot.traverse((o) => {
+      if (!o.isBone || deParte[o.name]) return;
+      for (let a = o.parent; a?.isBone; a = a.parent) if (deParte[a.name]) { deParte[o.name] = deParte[a.name]; break; }
+    });
+    const vertices = Object.fromEntries(PARTES.map((p) => [p.n, []]));
+    for (const m of modelo.formas.filter((f) => f.isSkinnedMesh)) {
+      const ind = m.geometry.attributes.skinIndex, pes = m.geometry.attributes.skinWeight, v = new THREE.Vector3();
+      for (let i = 0; i < ind.count; i++) {
+        let mejor = 0;
+        for (let k = 1; k < 4; k++) if (pes.getComponent(i, k) > pes.getComponent(i, mejor)) mejor = k;
+        const parte = deParte[m.skeleton.bones[ind.getComponent(i, mejor)].name];
+        if (!parte) continue;
+        m.getVertexPosition(i, v);
+        vertices[parte].push(v.clone().applyMatrix4(m.matrixWorld));
+      }
+    }
+
+    // Cápsulas: una fila de esferas a lo largo de la parte, del grosor de la piel.
+    this.partes = {};
+    this.masa = 0;
+    for (const p of PARTES) {
+      const a = junta(p.desde);
+      const d = p.arriba ? new THREE.Vector3(0, 1, 0) : junta(p.hasta).sub(a).normalize();
+      const largo = [], radial = [];
+      for (const v of vertices[p.n]) {
+        const r = v.clone().sub(a), t = r.dot(d);
+        largo.push(t);
+        radial.push(r.addScaledVector(d, -t).length());
+      }
+      // Un poco más finas que la piel: si no, las partes vecinas se pisan y no pueden chocar entre sí.
+      const radio = Math.max(.04, percentil(radial, .5) * .85);
+      const t0 = percentil(largo, .02) + radio, t1 = Math.max(t0, percentil(largo, .98) - radio);
+      const centro = a.clone().addScaledVector(d, (t0 + t1) / 2);
+      const cuerpo = new CANNON.Body({ mass: p.masa, position: aVec(centro), linearDamping: .05, angularDamping: .1,
+        collisionFilterGroup: this.grupo, collisionFilterMask: -1 });
+      cuerpo.ragdoll = this;   // para saber de quién es cuando choca
+      const visual = new THREE.Group();
+      const n = Math.max(1, Math.ceil((t1 - t0) / (radio * .8)) + 1);
+      for (let i = 0; i < n; i++) {
+        const t = n === 1 ? 0 : (i / (n - 1) - .5) * (t1 - t0);
+        const local = d.clone().multiplyScalar(t);
+        cuerpo.addShape(new CANNON.Sphere(radio), aVec(local));
+        const esfera = new THREE.Mesh(new THREE.IcosahedronGeometry(radio, 1),
+          new THREE.MeshBasicMaterial({ color: "#ff3b6b", wireframe: true, transparent: true, opacity: .55 }));
+        esfera.position.copy(local);
+        visual.add(esfera);
+      }
+      visual.visible = verCapsulas;
+      visual.userData.ragdoll = this;
+      visual.userData.cuerpo = cuerpo;
+      escena.add(visual);
+      mundo.addBody(cuerpo);
+      this.partes[p.n] = { ...p, cuerpo, visual, lado: Math.sign(centro.x) || 1, inicio: cuerpo.position.clone() };
+      this.masa += p.masa;
+    }
+
+    // Articulaciones en el punto donde empieza cada hijo.
+    for (const p of PARTES) {
+      if (!p.padre) continue;
+      const hijo = this.partes[p.n].cuerpo, padre = this.partes[p.padre].cuerpo;
+      const punto = aVec(junta(p.desde));
+      const eje = aVec(p.arriba ? new THREE.Vector3(0, 1, 0) : junta(p.hasta).sub(junta(p.desde)).normalize());
+      const union = new CANNON.ConeTwistConstraint(padre, hijo, {
+        pivotA: punto.vsub(padre.position), pivotB: punto.vsub(hijo.position), axisA: eje, axisB: eje,
+        angle: p.cono, twistAngle: p.giro, collideConnected: false,
+      });
+      // El tope de giro de cannon-es tiembla solo (hacía vibrar los brazos): el giro sobre el largo lo frenan los músculos.
+      union.twistEquation.enabled = false;
+      mundo.addConstraint(union);
+    }
+
+    // Las partes chocan entre sí (así no se atraviesa al caer), salvo las unidas y las que ya se tocan de fábrica.
+    const lista = Object.values(this.partes);
+    for (let i = 0; i < lista.length; i++) for (let j = i + 1; j < lista.length; j++) {
+      const a = lista[i], b = lista[j];
+      if (a.padre === b.n || b.padre === a.n || !seTocan(a.cuerpo, b.cuerpo)) continue;
+      mundo.addConstraint(new SinChoque(a.cuerpo, b.cuerpo, { collideConnected: false }));
+    }
+
+    // Cada hueso queda pegado a su parte: se guarda dónde está respecto de ella en la pose de reposo.
+    this.huesos = [];
+    kot.traverse((o) => {
+      if (!o.isBone) return;
+      const parte = deParte[o.name] && this.partes[deParte[o.name]];
+      const base = parte && new THREE.Matrix4().compose(parte.inicio, new THREE.Quaternion(), new THREE.Vector3(1, 1, 1));
+      this.huesos.push({ hueso: o, parte, desfase: parte && base.invert().multiply(o.matrixWorld) });
+    });
+
+    // Apoyarlo en el piso, en su lugar.
+    let bajo = Infinity;
+    for (const p of Object.values(this.partes)) for (const s of p.cuerpo.shapes) bajo = Math.min(bajo, p.cuerpo.position.y + p.cuerpo.shapeOffsets[p.cuerpo.shapes.indexOf(s)].y - s.radius);
+    this.desplazo = new CANNON.Vec3(x, .005 - bajo, z);
+    for (const p of Object.values(this.partes)) { p.inicio.vadd(this.desplazo, p.inicio); p.cuerpo.position.copy(p.inicio); }
+    this.alturaPelvis = this.partes.pelvis.inicio.y;
+    this.sincronizar();
+  }
+
+  get centro() { return this.partes.pelvis.cuerpo.position; }
+
+  /** Pose que buscan los músculos, respecto del padre (el reposo es la orientación de fábrica, sin giro). */
+  pose(p) {
+    const balanceo = Math.sin(this.t * 1.6 + this.fase);
+    // Cargando una caja: los dos brazos adelante, abrazándola.
+    if (this.cargando) {
+      if (p.n.startsWith("brazo")) return pose(-1.25, 0, -.12 * p.lado);
+      if (p.n.startsWith("antebrazo")) return pose(-.35, 0, 0);
+    }
+    // Festejo: los dos brazos arriba.
+    if (this.festejo > 0 && p.n.startsWith("brazo")) return pose(-.3, 0, 2.7 * p.lado);
+    // Chocala: la mano derecha arriba y adelante, hacia la cámara.
+    if (this.chocala && p.lado < 0) {
+      if (p.n === "brazo_der") return pose(-2.75, 0, .15);   // bien arriba y un poco adelante, para que se vea la mano
+      if (p.n === "antebrazo_der") return pose(-.15, 0, 0);
+    }
+    // Sentado en el piso: muslos adelante, piernas casi estiradas, manos apoyadas al costado.
+    if (this.sentado) {
+      switch (p.n) {
+        case "muslo_izq": case "muslo_der": return pose(-1.45, 0, .12 * p.lado);
+        case "pierna_izq": case "pierna_der": return pose(.2, 0, 0);
+        case "brazo_izq": case "brazo_der": return pose(.35, 0, .3 * p.lado);
+        case "antebrazo_izq": case "antebrazo_der": return pose(-.2, 0, 0);
+      }
+    }
+    // Enojado: zapatea, puños cerrados adelante y niega con la cabeza.
+    if (this.zapateo) {
+      const fasePierna = this.t * 9 + (p.lado > 0 ? 0 : Math.PI);
+      switch (p.n) {
+        case "muslo_izq": case "muslo_der": return pose(-.08 - .45 * Math.max(0, Math.sin(fasePierna)), 0, 0);
+        case "pierna_izq": case "pierna_der": return pose(.16 + .8 * Math.max(0, Math.sin(fasePierna)), 0, 0);
+        case "brazo_izq": case "brazo_der": return pose(-.5, 0, .15 * p.lado);
+        case "antebrazo_izq": case "antebrazo_der": return pose(-1.6, 0, 0);
+        case "cabeza": return pose(.05, Math.sin(this.t * 11) * .35, 0);
+      }
+    }
+    // Brazos que manda el cerebro: trompada (brazo estirado adelante) o saludo (brazo arriba).
+    if (this.puno && p.lado === this.puno.lado) {
+      if (p.n.startsWith("brazo")) return pose(-1.5, 0, -.2 * p.lado);
+      if (p.n.startsWith("antebrazo")) return pose(-.05, 0, 0);
+    }
+    if (this.brazoArriba > 0 && p.lado < 0) {
+      const chau = Math.sin(this.t * 12) * .35;
+      if (p.n === "brazo_der") return pose(0, 0, -2.6 + chau);
+      if (p.n === "antebrazo_der") return pose(-.3, 0, 0);
+    }
+    if (p.n === "cabeza" && this.mirando) return pose(.08, this.giroCabeza(), 0);
+    if (this.caminando) {
+      // Ciclo de caminar: cada pierna en contrafase, rodilla doblada al llevarla adelante, brazos al revés que las piernas.
+      const fasePierna = this.paso_ + (p.lado > 0 ? 0 : Math.PI), s = Math.sin(fasePierna);
+      switch (p.n) {
+        case "muslo_izq": case "muslo_der": return pose(-.08 - ZANCADA * s, 0, 0);
+        case "pierna_izq": case "pierna_der": return pose(.16 + .75 * Math.max(0, Math.cos(fasePierna)), 0, 0);
+        case "brazo_izq": case "brazo_der": return pose(.45 * s, 0, .06 * p.lado);
+        case "antebrazo_izq": case "antebrazo_der": return pose(-.45, 0, 0);
+        case "cabeza": return pose(.1, 0, 0);
+      }
+      return new CANNON.Quaternion();
+    }
+    switch (p.n) {
+      case "brazo_izq": case "brazo_der": return pose(.12 * balanceo * p.lado, 0, .06 * p.lado);
+      case "antebrazo_izq": case "antebrazo_der": return pose(-.25, 0, 0);
+      // Rodillas y caderas apenas flexionadas: con la pierna recta justo en el tope, el músculo y el tope pelean y tiembla.
+      case "pierna_izq": case "pierna_der": return pose(.16, 0, 0);
+      case "muslo_izq": case "muslo_der": return pose(-.08, 0, 0);
+      // Un poco hacia adelante: compensa el peso de la cabeza, que si no cuelga hacia atrás.
+      case "cabeza": return pose(.12 + .05 * Math.sin(this.t * .9 + this.fase), .15 * Math.sin(this.t * .5 + this.fase), 0);
+    }
+    return new CANNON.Quaternion();
+  }
+
+  paso(dt) {
+    this.t += dt;
+    this.reloj += dt;
+    if (this.golpe) this.golpe.hace += dt;
+    if (this.puno && (this.puno.t -= dt) <= 0) this.puno = null;
+    this.brazoArriba = Math.max(0, this.brazoArriba - dt);
+    this.festejo = Math.max(0, this.festejo - dt);
+    let fuerza = 1;
+    if (this.agarrado) { this.estado = "caido"; this.reloj = 0; }
+    if (this.estado === "caido") {
+      fuerza = 0;
+      if (this.reloj >= TIEMPO_CAIDO && !trapo) { this.estado = "levantando"; this.reloj = 0; }
+    } else if (this.estado === "levantando") {
+      const x = Math.min(1, this.reloj / TIEMPO_LEVANTARSE);
+      fuerza = x * x * (3 - 2 * x);
+      if (this.reloj >= TIEMPO_LEVANTARSE + .8) {
+        if (this.estaParado()) this.estado = "pie";
+        else { this.estado = "caido"; this.reloj = TIEMPO_CAIDO * .5; }
+      }
+    }
+    if (trapo) fuerza = 0;
+    for (const p of Object.values(this.partes)) p.cuerpo.updateInertiaWorld(true);
+    // Piensa solo de pie y suelto; si lo tiran o lo agarran, se corta lo que estaba haciendo.
+    if (this.estaDePie) this.cerebro?.actualizar(dt);
+    else { this.cerebro?.interrumpir(); this.soltarCaja(); this.objetivo = this.hacia = this.mirando = null; }
+    this.decidirCaminar(dt, fuerza);
+    // Caído o agarrado no se sostiene, pero tampoco queda hecho un trapo.
+    const tono = trapo ? 0 : Math.max(fuerza, TONO_CAIDO);
+    if (tono > 0) this.musculos(tono * musculos);
+    if (fuerza > 0 && !this.agarrado) this.equilibrio(fuerza * Math.min(1, musculos));
+  }
+
+  /** Cada parte gira hacia su pose respecto de su padre; el padre recibe el giro contrario. */
+  musculos(fuerza) {
+    const k = AJ.rigidez * fuerza, c = AJ.amortiguacion * Math.sqrt(Math.max(fuerza, .0001));
+    for (const p of Object.values(this.partes)) {
+      if (!p.padre) continue;
+      const cuerpo = p.cuerpo, padre = this.partes[p.padre].cuerpo;
+      // Inercia "reducida" de las dos partes: si se usa solo la del hijo, una parte liviana recibe de más y tiembla.
+      const inercia = sumar(cuerpo.invInertiaWorld, padre.invInertiaWorld).reverse();
+      // Brazos levantados (chocala, festejo, cargando): el triple de fuerza, si no se caen por el peso.
+      const extra = this.brazoFuerte(p) ? 3 : 1;
+      const torque = torqueHacia(cuerpo, padre.quaternion.mult(this.pose(p)), padre.angularVelocity, inercia, k * extra, c * Math.sqrt(extra));
+      cuerpo.torque.vadd(torque, cuerpo.torque);
+      padre.torque.vsub(torque, padre.torque);
+    }
+  }
+
+  brazoFuerte(p) {
+    if (!p.n.includes("brazo")) return false;
+    return this.festejo > 0 || !!this.cargando || (this.chocala && p.lado < 0);
+  }
+
+  /** Camina hacia el objetivo que puso el cerebro, o gira en el lugar hacia donde le dijo. */
+  decidirCaminar(dt, fuerza) {
+    const pelvis = this.partes.pelvis.cuerpo;
+    this.manejaRumbo = false;
+    const o = this.estaDePie ? this.objetivo : null;
+    const dx = o ? o.x - pelvis.position.x : 0, dz = o ? o.z - pelvis.position.z : 0, lejos = Math.hypot(dx, dz);
+    if (!o || lejos < .12) this.caminando = false;
+    else if (lejos > .3) this.caminando = true;
+    const h = this.caminando ? null : this.estaDePie && this.hacia;
+    if (!this.caminando && !h) return;
+    // Girar de a poco hacia allá (caminando, o en el lugar para encarar a alguien).
+    const destino = this.caminando ? Math.atan2(dx, dz) : Math.atan2(h.x - pelvis.position.x, h.z - pelvis.position.z);
+    let giro = destino - this.rumbo;
+    giro = Math.atan2(Math.sin(giro), Math.cos(giro));
+    this.rumbo += Math.sign(giro) * Math.min(Math.abs(giro), dt * 3.5);
+    this.manejaRumbo = true;
+    if (!this.caminando) return;
+    // El ciclo avanza según lo que camina de verdad: así el pie de apoyo no patina.
+    const avance = Math.hypot(pelvis.velocity.x, pelvis.velocity.z);
+    this.paso_ += dt * Math.max(3, avance * Math.PI * 2 / LARGO_CICLO);
+    const rapidez = this.rapidez * Math.min(1, lejos * 2) * (Math.abs(giro) < 1 ? 1 : .2);
+    this.velocidadDeseada = { x: Math.sin(this.rumbo) * rapidez, z: Math.cos(this.rumbo) * rapidez };
+  }
+
+  // --- Lo que usa el cerebro (kot-cerebro.js) ---
+  get estaDePie() { return this.estado === "pie" && !this.agarrado && !trapo; }
+  get posicion() { return this.partes.pelvis.cuerpo.position; }
+  get cajas() { return cajas; }
+  otros() { return kots.filter((k) => k !== this && k.estaDePie); }
+  irA(punto, rapidez = .9) {
+    this.objetivo = { x: punto.x, z: punto.z };
+    this.rapidez = rapidez;
+    return Math.hypot(punto.x - this.posicion.x, punto.z - this.posicion.z);
+  }
+  parar() { this.objetivo = null; }
+  mirar(punto) { this.mirando = punto ? { x: punto.x, y: punto.y ?? 1.2, z: punto.z } : null; }
+  encarar(punto) { this.hacia = punto ? { x: punto.x, z: punto.z } : null; }
+  saludar() { this.brazoArriba = 1.6; }
+  sentar(si) { this.sentado = si; }
+  manoArriba(si) { this.chocala = si; }
+  zapatear(si) { this.zapateo = si; }
+  /** Levanta una caja con los dos brazos: queda colgada adelante del pecho, más liviana mientras la lleva. */
+  levantarCaja(caja) {
+    if (this.cargando) return;
+    const torso = this.partes.torso.cuerpo, m = caja.shapes[0].halfExtents;
+    const adelante = torso.shapes[0].radius + Math.max(m.x, m.z) * .6 + .12;
+    const union = new CANNON.PointToPointConstraint(torso, new CANNON.Vec3(0, .05, adelante), caja, new CANNON.Vec3(), this.masa * 8);   // fuerza justa: la sube despacio
+    mundo.addConstraint(union);
+    this.cargando = { caja, union, masa: caja.mass, giro: caja.angularDamping };
+    caja.mass = 1.5; caja.updateMassProperties(); caja.angularDamping = .9;
+  }
+  soltarCaja() {
+    const c = this.cargando;
+    if (!c) return;
+    mundo.removeConstraint(c.union);
+    c.caja.mass = c.masa; c.caja.updateMassProperties(); c.caja.angularDamping = c.giro;
+    this.cargando = null;
+  }
+  /** Salto con los brazos arriba. */
+  festejar() {
+    this.festejo = 1.3;
+    this.partes.pelvis.cuerpo.applyImpulse(new CANNON.Vec3(0, this.masa * 2.4, 0), new CANNON.Vec3());
+  }
+  /** Trompada: estira un brazo y le da un envión al puño hacia adelante. */
+  pegar() {
+    const lado = this.ultimoPuno = -(this.ultimoPuno || 1);
+    this.puno = { lado, t: .3 };
+    const puno = this.partes[lado > 0 ? "antebrazo_izq" : "antebrazo_der"].cuerpo;
+    const adelante = new CANNON.Vec3(Math.sin(this.rumbo), .15, Math.cos(this.rumbo));
+    puno.applyImpulse(adelante.scale(puno.mass * 7), new CANNON.Vec3());
+    this.partes.torso.cuerpo.applyImpulse(adelante.scale(this.masa * .25), new CANNON.Vec3());
+  }
+  /** Giro de la cabeza (respecto del cuerpo) para mirar lo que dijo el cerebro, con tope para no desnucarse. */
+  giroCabeza() {
+    const m = this.mirando, c = this.partes.cabeza.cuerpo.position;
+    let giro = Math.atan2(m.x - c.x, m.z - c.z) - this.rumbo;
+    giro = Math.atan2(Math.sin(giro), Math.cos(giro));
+    return Math.max(-.8, Math.min(.8, giro));
+  }
+  /** Le pegó algo fuerte (otro Kot, una caja revoleada): se cae y se acuerda de quién fue. */
+  recibirGolpe(de, direccion, fuerza) {
+    if (this.estado !== "pie" || this.agarrado) return;
+    this.golpe = { de, hace: 0 };
+    this.empujar(direccion, fuerza);
+  }
+
+  /** La trampa de los juegos tipo Gang Beasts: endereza pelvis y torso y sostiene la pelvis a la altura de estar parado. */
+  equilibrio(fuerza) {
+    const pelvis = this.partes.pelvis.cuerpo, torso = this.partes.torso.cuerpo;
+    const adelante = pelvis.quaternion.vmult(new CANNON.Vec3(0, 0, 1));
+    // Caminando, el rumbo lo pone decidirCaminar; quieto, sigue hacia donde quedó mirando.
+    if (!this.manejaRumbo && Math.hypot(adelante.x, adelante.z) > .3) this.rumbo = Math.atan2(adelante.x, adelante.z);
+    const derecho = new CANNON.Quaternion().setFromAxisAngle(new CANNON.Vec3(0, 1, 0), this.rumbo);
+    for (const parte of [pelvis, torso]) {
+      const inercia = parte.invInertiaWorld.reverse();
+      parte.torque.vadd(torqueHacia(parte, derecho, new CANNON.Vec3(), inercia, AJ.rigidez * AJ.equilibrio * musculos, AJ.amortiguacion).scale(fuerza), parte.torque);
+    }
+    const sueloY = this.alturaSuelo(pelvis.position);
+    if (sueloY == null) return;
+    const altura = this.sentado ? .2 : this.alturaPelvis - (this.caminando || this.zapateo ? BAJADA_CAMINANDO : 0);
+    const error = sueloY + altura - pelvis.position.y;
+    const empuje = this.masa * (9.8 + 60 * error - 18 * pelvis.velocity.y) * fuerza;
+    pelvis.force.y += Math.max(empuje, 0);
+    // Freno horizontal; caminando, empuja hacia la velocidad que busca (como en Gang Beasts, las piernas acompañan).
+    const quiere = this.caminando ? this.velocidadDeseada : { x: 0, z: 0 };
+    const tiron = this.caminando ? 6 : 3;
+    pelvis.force.x += (quiere.x - pelvis.velocity.x) * this.masa * tiron * fuerza;
+    pelvis.force.z += (quiere.z - pelvis.velocity.z) * this.masa * tiron * fuerza;
+  }
+
+  alturaSuelo(desde) {
+    const resultado = new CANNON.RaycastResult();
+    // Desde un poco más arriba (por si la pelvis ya está apoyada) hacia abajo; el piso es infinito en y = 0.
+    mundo.raycastClosest(new CANNON.Vec3(desde.x, desde.y + .3, desde.z), new CANNON.Vec3(desde.x, desde.y - 1.5, desde.z),
+      { collisionFilterMask: SUELO, skipBackfaces: true }, resultado);
+    return resultado.hasHit ? Math.max(0, resultado.hitPointWorld.y) : 0;
+  }
+
+  estaParado() {
+    const torso = this.partes.torso.cuerpo, pelvis = this.partes.pelvis.cuerpo;
+    const arriba = torso.quaternion.vmult(new CANNON.Vec3(0, 1, 0));
+    const sueloY = this.alturaSuelo(pelvis.position);
+    return arriba.y > .85 && sueloY != null && pelvis.position.y - sueloY > this.alturaPelvis * .8;
+  }
+
+  empujar(direccion, fuerza = 1, parte = this.partes.torso.cuerpo, punto = null) {
+    this.estado = "caido"; this.reloj = 0;
+    this.modelo.parpadear(.3);
+    const d = new CANNON.Vec3(direccion.x, 0, direccion.z);
+    d.normalize();
+    const impulso = d.scale(5).vadd(new CANNON.Vec3(0, 1.5, 0)).scale(this.masa * .35 * fuerza);
+    parte.applyImpulse(impulso, punto ? punto.vsub(parte.position) : new CANNON.Vec3(0, .15, 0));
+  }
+
+  /** Vuelve a la pose de reposo; "alto" lo levanta en el aire con un giro al azar. */
+  reiniciar(alto = 0) {
+    const pelvis = this.partes.pelvis;
+    const mover = new CANNON.Vec3(pelvis.cuerpo.position.x - pelvis.inicio.x, alto, pelvis.cuerpo.position.z - pelvis.inicio.z);
+    if (alto) { mover.x *= .3; mover.z *= .3; }
+    for (const p of Object.values(this.partes)) {
+      p.cuerpo.position.copy(p.inicio.vadd(mover));
+      p.cuerpo.quaternion.set(0, 0, 0, 1);
+      p.cuerpo.velocity.setZero();
+      p.cuerpo.angularVelocity.setZero();
+    }
+    this.rumbo = 0;
+    if (alto) {
+      const giro = new CANNON.Vec3(Math.random() - .5, Math.random() - .5, Math.random() - .5).scale(9);
+      for (const p of Object.values(this.partes)) p.cuerpo.angularVelocity.copy(giro);
+      this.estado = "caido"; this.reloj = 0;
+    } else this.estado = "pie";
+  }
+
+  /** Copia la física a los huesos del Kot (de padre a hijo) y a las cápsulas de depuración. */
+  sincronizar() {
+    const m = new THREE.Matrix4(), padreInv = new THREE.Matrix4();
+    for (const { hueso, parte, desfase } of this.huesos) {
+      if (!parte) continue;
+      const c = parte.cuerpo;
+      m.compose(_v.set(c.position.x, c.position.y, c.position.z), _q.set(c.quaternion.x, c.quaternion.y, c.quaternion.z, c.quaternion.w), _uno).multiply(desfase);
+      padreInv.copy(hueso.parent.matrixWorld).invert();
+      hueso.matrix.multiplyMatrices(padreInv, m);
+      hueso.matrix.decompose(hueso.position, hueso.quaternion, hueso.scale);
+      hueso.matrixWorld.copy(m);
+    }
+    for (const p of Object.values(this.partes)) {
+      p.visual.position.copy(p.cuerpo.position);
+      p.visual.quaternion.copy(p.cuerpo.quaternion);
+      p.visual.visible = verCapsulas;
+    }
+  }
+}
+const _v = new THREE.Vector3(), _uno = new THREE.Vector3(1, 1, 1);
+
+// --- Kots -------------------------------------------------------------------------------------
+const LUGARES = [[0, 0], [.9, .7], [-.9, .7], [0, 1.4]];
+async function agregarKot(perfil) {
+  if (kots.length >= LUGARES.length) return null;
+  const modelo = await cargarKot({ clips: false });
+  const r = new Ragdoll(modelo, perfil || kotAlAzar(modelo.catalogo), kots.length, ...LUGARES[kots.length]);
+  // Sala: el cerebro de tu Kot. Plaza: el tuyo con el carácter base y los otros con uno al azar.
+  const caracteres = Object.keys(CARACTERES);
+  r.cerebro = !PLAZA_MODO ? new CerebroSala(r, camara.position)   // mira a la cámara de verdad
+    : new Cerebro(r, kots.length ? caracteres[Math.floor(Math.random() * caracteres.length)] : "base");
+  kots.push(r);
+  return r;
+}
+
+await agregarKot({ ...copiar(KOT_INICIAL), ...cargarBorrador() });
+document.getElementById("cargando").remove();
+// Músculos y equilibrio van al final de cada paso, así entran al siguiente antes de que se resuelvan las articulaciones.
+// (En "preStep" cannon-es ya resolvió todo: la fuerza llega tarde, el freno lee una velocidad a medio calcular y el muñeco flota.)
+mundo.addEventListener("postStep", () => { for (const r of kots) r.paso(PASO); });
+
+// --- Golpes: si algo le llega fuerte a un Kot de pie (otro Kot, una trompada, una caja revoleada), lo tira ---
+// Cuenta como golpe: una trompada, o un Kot o una caja que viene volando (revoleados con el dedo).
+// Un Kot que se levanta o camina no voltea a nadie, aunque agite los brazos: si no, se caen todos en cadena.
+const GOLPE_TROMPADA = 2.5, GOLPE_VOLANDO = 4.5;   // m/s de diferencia entre los dos cuerpos
+mundo.addEventListener("beginContact", ({ bodyA, bodyB }) => {
+  for (const [kot, otro] of [[bodyA, bodyB], [bodyB, bodyA]]) {
+    const r = kot.ragdoll, agresor = otro.ragdoll;
+    if (!r || agresor === r || otro === suelo || r.cargando?.caja === otro) continue;   // la caja que lleva no lo tira
+    if (agresor && !agresor.puno && agresor.estado !== "caido") continue;
+    const golpe = otro.velocity.vsub(kot.velocity);
+    const minimo = agresor?.puno ? GOLPE_TROMPADA : GOLPE_VOLANDO;
+    if (golpe.length() < minimo || otro.velocity.length() < kot.velocity.length()) continue;   // pega el que viene más rápido
+    r.recibirGolpe(otro.ragdoll || "caja", golpe, Math.min(1.2, golpe.length() / 8));
+  }
+});
+
+// --- Agarrar, tocar y mirar ------------------------------------------------------------------
+const rayo = new THREE.Raycaster(), puntero = new THREE.Vector2();
+const mano = new CANNON.Body({ mass: 0, type: CANNON.Body.KINEMATIC, collisionFilterGroup: 0, collisionFilterMask: 0 });
+mundo.addBody(mano);
+const plano = new THREE.Plane(), golpe = new THREE.Vector3();
+let agarre = null, orbita = null;
+const dedos = new Map();
+// En el celular parado (pantalla angosta) la cámara arranca más lejos para ver todo el lugar.
+const vistaCam = { giro: .35, altura: .42, distancia: innerWidth < innerHeight ? 8.5 : 6 };
+
+function aRayo(e) {
+  puntero.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  rayo.setFromCamera(puntero, camara);
+}
+
+const avisar = (tipo, dato) => kots[0]?.cerebro?.evento?.(tipo, dato);   // a tu Kot (en la sala)
+render.domElement.addEventListener("pointerdown", (e) => {
+  render.domElement.setPointerCapture(e.pointerId);
+  avisar("actividad");
+  dedos.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (dedos.size === 2) {   // pellizco: se suelta todo y se usa para acercar
+    soltar(false);
+    orbita = null;
+    return;
+  }
+  aRayo(e);
+  const visuales = kots.flatMap((r) => Object.values(r.partes).map((p) => p.visual)).concat(cajas.map((c) => c.malla));
+  const toque = rayo.intersectObjects(visuales, true)[0];
+  if (toque) {
+    // Una esfera del Kot (su grupo dice de qué Kot y parte es) o una caja.
+    const datos = toque.object.userData.cuerpo ? toque.object.userData : toque.object.parent.userData;
+    const r = datos.ragdoll || null, cuerpo = datos.cuerpo;
+    // Chocala: tocarle la mano levantada es chocarla, no agarrarlo.
+    if (r?.chocala && (cuerpo === r.partes.brazo_der.cuerpo || cuerpo === r.partes.antebrazo_der.cuerpo)) {
+      r.cerebro?.evento?.("manoTocada");
+      return;
+    }
+    const punto = aVec(toque.point);
+    const local = cuerpo.quaternion.inverse().vmult(punto.vsub(cuerpo.position));
+    mano.position.copy(punto);
+    const union = new CANNON.PointToPointConstraint(cuerpo, local, mano, new CANNON.Vec3(), (r ? r.masa : cuerpo.mass * 3) * 25);
+    mundo.addConstraint(union);
+    plano.setFromNormalAndCoplanarPoint(camara.getWorldDirection(new THREE.Vector3()).negate(), toque.point);
+    agarre = { r, cuerpo, union, punto, x: e.clientX, y: e.clientY, t: performance.now(), movio: false, id: e.pointerId };
+    if (r) r.agarrado = true;
+  } else orbita = { x: e.clientX, y: e.clientY, id: e.pointerId };
+});
+
+render.domElement.addEventListener("pointermove", (e) => {
+  const antes = dedos.get(e.pointerId);
+  if (!antes) return;
+  if (dedos.size === 2) {
+    const [a, b] = [...dedos.values()];
+    const d0 = Math.hypot(a.x - b.x, a.y - b.y);
+    antes.x = e.clientX; antes.y = e.clientY;
+    const [c, d] = [...dedos.values()];
+    const d1 = Math.hypot(c.x - d.x, c.y - d.y);
+    if (d0 > 0) vistaCam.distancia = THREE.MathUtils.clamp(vistaCam.distancia * d0 / d1, 2.2, 12);
+    return;
+  }
+  antes.x = e.clientX; antes.y = e.clientY;
+  if (agarre && agarre.id === e.pointerId) {
+    if (Math.hypot(e.clientX - agarre.x, e.clientY - agarre.y) > 8) agarre.movio = true;
+    aRayo(e);
+    if (rayo.ray.intersectPlane(plano, golpe)) mano.position.set(golpe.x, Math.max(.05, golpe.y), golpe.z);
+  } else if (orbita && orbita.id === e.pointerId) {
+    vistaCam.giro -= (e.clientX - orbita.x) * .008;
+    vistaCam.altura = THREE.MathUtils.clamp(vistaCam.altura + (e.clientY - orbita.y) * .004, .05, 1.2);
+    orbita.x = e.clientX; orbita.y = e.clientY;
+  }
+});
+
+function soltar(tocado) {
+  if (!agarre) return;
+  mundo.removeConstraint(agarre.union);
+  if (agarre.r) { agarre.r.agarrado = false; agarre.r.reloj = 0; }
+  const r = agarre.r;
+  if (tocado && r) {   // un toque corto es un empujón desde donde miro
+    const dir = camara.getWorldDirection(new THREE.Vector3());
+    r.empujar(dir, .8, agarre.cuerpo, agarre.punto);
+    r.golpe = { de: "mano", hace: 0 };
+    r.cerebro?.evento?.("maltrato");
+  } else if (tocado && !r) {   // tocaste una caja: que vaya a buscarla
+    avisar("objeto", cajas.find((c) => c.cuerpo === agarre.cuerpo));
+  } else if (r && agarre.cuerpo.velocity.length() > 3) {   // lo revoleaste
+    r.cerebro?.evento?.("maltrato");
+  }
+  agarre = null;
+}
+function terminar(e) {
+  dedos.delete(e.pointerId);
+  if (agarre && agarre.id === e.pointerId) soltar(!agarre.movio && performance.now() - agarre.t < 260);
+  if (orbita && orbita.id === e.pointerId) orbita = null;
+}
+render.domElement.addEventListener("pointerup", terminar);
+render.domElement.addEventListener("pointercancel", terminar);
+render.domElement.addEventListener("wheel", (e) => {
+  vistaCam.distancia = THREE.MathUtils.clamp(vistaCam.distancia * (1 + e.deltaY * .001), 2.2, 12);
+}, { passive: true });
+
+// --- Botones -----------------------------------------------------------------------------------
+const $ = (id) => document.getElementById(id);
+$("tirar").onclick = () => { soltar(false); kots.forEach((r, i) => r.reiniciar(2.2 + i * .6)); avisar("maltrato"); };
+$("chocala").onclick = () => avisar("chocala");
+// La sala es solo tuya: sin "Otro Kot". La plaza no tiene "Chocala".
+(PLAZA_MODO ? $("chocala") : $("otro")).style.display = "none";
+$("levantar").onclick = () => {
+  soltar(false);
+  for (const r of kots) r.reiniciar(0);
+  for (const c of cajas) { c.cuerpo.position.copy(c.inicio.p); c.cuerpo.quaternion.copy(c.inicio.q); c.cuerpo.velocity.setZero(); c.cuerpo.angularVelocity.setZero(); }
+};
+$("trapo").onclick = () => {
+  trapo = !trapo;
+  $("trapo").classList.toggle("activo", trapo);
+  if (trapo) for (const r of kots) { r.estado = "caido"; r.reloj = 0; }
+};
+$("otro").onclick = async () => {
+  const boton = $("otro");
+  if (kots.length >= LUGARES.length) return;
+  boton.disabled = true;
+  await agregarKot();
+  boton.disabled = kots.length >= LUGARES.length;
+  if (boton.disabled) boton.style.opacity = .5;
+};
+
+// --- Cuadro ------------------------------------------------------------------------------------
+const NOMBRES = { pie: "De pie", caido: "En el piso", levantando: "Levantándose" };
+const mira = new THREE.Vector3(0, .75, .4), reloj = new THREE.Clock();
+function cuadro() {
+  const dt = Math.min(reloj.getDelta(), .05);
+  mundo.step(PASO, dt, 8);
+  for (const r of kots) { r.sincronizar(); r.modelo.actualizarOjos(dt); }
+  for (const c of cajas) { c.malla.position.copy(c.cuerpo.position); c.malla.quaternion.copy(c.cuerpo.quaternion); }
+
+  // Cámara fija mirando el centro: los Kots vuelven caminando a su lugar.
+  camara.position.set(
+    mira.x + Math.sin(vistaCam.giro) * Math.cos(vistaCam.altura) * vistaCam.distancia,
+    mira.y + Math.sin(vistaCam.altura) * vistaCam.distancia,
+    mira.z + Math.cos(vistaCam.giro) * Math.cos(vistaCam.altura) * vistaCam.distancia);
+  camara.lookAt(mira);
+  sol.position.set(mira.x + 3, mira.y + 6, mira.z + 4);
+  sol.target.position.copy(mira);
+
+  const principal = kots[0];
+  const estado = principal.agarrado ? "Agarrado" : trapo ? "Trapo"
+    : principal.estado === "pie" ? principal.cerebro?.texto || "De pie" : NOMBRES[principal.estado];
+  if ($("estado").textContent !== estado) {
+    $("estado").textContent = estado;
+    $("estado").className = "estado " + (principal.agarrado || trapo ? "caido" : principal.estado);
+  }
+  render.render(escena, camara);
+  requestAnimationFrame(cuadro);
+}
+function ajustar() {
+  render.setSize(innerWidth, innerHeight, false);
+  camara.aspect = innerWidth / innerHeight;
+  camara.updateProjectionMatrix();
+}
+addEventListener("resize", ajustar);
+ajustar();
+cuadro();
+
+</script>
+</body>
+</html>

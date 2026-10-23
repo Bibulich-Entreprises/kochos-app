@@ -24,6 +24,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .pantalla.visible { display: flex; }
 @keyframes aparecer { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 h1 { margin: 4px 0 0; font-size: 30px; letter-spacing: -.5px; }
+.paso { font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--acento); margin: 0; }
 p { margin: 0; line-height: 1.45; }
 .suave { color: var(--suave); }
 .nota { color: var(--suave); font-size: 14px; }
@@ -55,8 +56,32 @@ input:focus { outline: 3px solid color-mix(in srgb, var(--acento) 40%, transpare
 .principal.grande { font-size: 21px; padding: 20px; }
 .secundario { background: var(--tarjeta); border: 1px solid var(--borde); }
 
-.vista-kot { display: grid; place-items: center; margin-top: 4px; }
+.vista-kot { display: grid; place-items: center; margin-top: 4px; position: relative; width: 100%; height: min(32vh, 260px); min-height: 180px; }
 .vista-kot .kot { width: 150px; height: 155px; }
+.vista-kot canvas { display: block; width: 100%; height: 100%; border-radius: 24px; background: linear-gradient(var(--cielo-a, #dfe8f2), var(--cielo-b, #f6f8fb)); border: 1px solid var(--borde); }
+@media (prefers-color-scheme: dark) {
+  .vista-kot canvas { background: linear-gradient(var(--cielo-a, #1a2533), var(--cielo-b, #10161f)); }
+}
+#kot-inicio { height: min(40vh, 340px); }
+.cargando { position: absolute; inset: 0; display: grid; place-items: center; color: var(--suave); font-size: 14px; border-radius: 24px; background: var(--tarjeta); }
+
+/* Paso 2: el editor ocupa la pantalla; la puerta sigue viva detrás (perfil y datos intactos). */
+.pantalla[data-pantalla="editor"] { position: fixed; inset: 0; z-index: 40; margin: 0; padding: 0; max-width: none;
+  background: var(--fondo); animation: none; }
+.pantalla[data-pantalla="editor"] iframe { display: block; width: 100%; height: 100%; border: 0; background: var(--fondo); }
+
+/* Aviso corto ("Guardado", "Tu Kot está guardado"). */
+.aviso { position: fixed; left: 50%; bottom: max(96px, calc(env(safe-area-inset-bottom) + 84px)); z-index: 60;
+  transform: translate(-50%, 14px); opacity: 0; pointer-events: none; transition: .22s ease-out;
+  background: var(--tinta); color: var(--fondo); padding: 10px 18px; border-radius: 999px; font-weight: 700; font-size: 15px;
+  max-width: 88vw; text-align: center; }
+.aviso.ver { opacity: 1; transform: translate(-50%, 0); }
+
+input.falta { border-color: var(--acento); outline: 3px solid color-mix(in srgb, var(--acento) 45%, transparent); }
+
+.acciones-editor { display: flex; gap: 8px; margin-top: 4px; }
+.acciones-editor button { flex: 1; padding: 12px; border-radius: 16px; font-weight: 700; background: var(--tarjeta); border: 1px solid var(--borde); }
+.acciones-editor button:active { transform: scale(0.98); }
 .camina .kot-cuerpo { animation: rebote .9s ease-in-out infinite; transform-origin: 60px 118px; }
 @keyframes rebote { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-6px) rotate(2deg); } }
 .camina .kot-pie { animation: paso .9s ease-in-out infinite; }

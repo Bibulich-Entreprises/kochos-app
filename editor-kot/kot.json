@@ -1,0 +1,2017 @@
+{
+ "version": 1792757509,
+ "inicial": {
+  "caras": "Face_00",
+  "remeras": "remera_01",
+  "pantalones": "Pants_01",
+  "zapatillas": "Shoes_01",
+  "medias": "sin",
+  "guantes": "sin",
+  "anteojos": "sin",
+  "sombreros": "sin",
+  "extras": "sin",
+  "pelos": "sin",
+  "barbas": "sin",
+  "caretas": "sin",
+  "espalda": "sin",
+  "mano": "sin",
+  "ojos": "ojos_01",
+  "cejas": "sin",
+  "bocas": "sin"
+ },
+ "piezas": {
+  "caras": [
+   {
+    "id": "Face_00",
+    "objeto": "Face_0"
+   }
+  ],
+  "remeras": [
+   {
+    "id": "sin",
+    "objeto": null,
+    "vacia": true
+   },
+   {
+    "id": "remera_01",
+    "objeto": "Top_01",
+    "partes": [
+     {
+      "c": "#b0e47e"
+     },
+     {
+      "c": "#9ece72"
+     }
+    ]
+   },
+   {
+    "id": "remera_02",
+    "objeto": "Top_02",
+    "partes": [
+     {
+      "c": "#b0e47e"
+     },
+     {
+      "c": "#f6f6f6"
+     }
+    ]
+   },
+   {
+    "id": "remera_03",
+    "objeto": "Top_03",
+    "partes": [
+     {
+      "c": "#b0e47e"
+     },
+     {
+      "c": "#f6f6f6"
+     }
+    ]
+   },
+   {
+    "id": "remera_04",
+    "objeto": "Top_04",
+    "partes": [
+     {
+      "c": "#b0e47e"
+     },
+     {
+      "c": "#9ece72"
+     }
+    ]
+   },
+   {
+    "id": "remera_05",
+    "objeto": "Top_05",
+    "partes": [
+     {
+      "c": "#b0e47e"
+     },
+     {
+      "c": "#f6f6f6"
+     }
+    ]
+   },
+   {
+    "id": "remera_06",
+    "objeto": "Top_06",
+    "partes": [
+     {
+      "c": "#f6f6f6"
+     },
+     {
+      "c": "#9ece72"
+     }
+    ]
+   },
+   {
+    "id": "remera_07",
+    "objeto": "Top_07",
+    "partes": [
+     {
+      "c": "#b0e47e"
+     },
+     {
+      "c": "#9ece72"
+     }
+    ]
+   },
+   {
+    "id": "remera_08",
+    "objeto": "Top_08",
+    "partes": [
+     {
+      "c": "#b0e47e"
+     },
+     {
+      "c": "#f6f6f6"
+     }
+    ]
+   },
+   {
+    "id": "remera_09",
+    "objeto": "Top_09",
+    "partes": [
+     {
+      "c": "#b0e47e"
+     }
+    ]
+   },
+   {
+    "id": "remera_10",
+    "objeto": "Tshirt_5",
+    "partes": [
+     {
+      "c": "#b0e47e"
+     },
+     {
+      "c": "#9ece72"
+     }
+    ]
+   },
+   {
+    "id": "remera_11",
+    "objeto": "Tshirt_6",
+    "partes": [
+     {
+      "c": "#b0e47e"
+     },
+     {
+      "c": "#9ece72"
+     }
+    ]
+   },
+   {
+    "id": "remera_12",
+    "objeto": "Tshirt_7",
+    "partes": [
+     {
+      "c": "#b0e47e"
+     },
+     {
+      "c": "#9ece72"
+     }
+    ]
+   },
+   {
+    "id": "remera_13",
+    "objeto": "Tshirt_8",
+    "partes": [
+     {
+      "c": "#b0e47e"
+     },
+     {
+      "c": "#9ece72"
+     }
+    ]
+   },
+   {
+    "id": "remera_hombre_01",
+    "objeto": "remera_hombre_01",
+    "partes": [
+     {
+      "c": "#ec789f"
+     }
+    ]
+   },
+   {
+    "id": "remera_hombre_02",
+    "objeto": "remera_hombre_02",
+    "partes": [
+     {
+      "c": "#ec789f"
+     }
+    ]
+   },
+   {
+    "id": "remera_hombre_03",
+    "objeto": "remera_hombre_03",
+    "partes": [
+     {
+      "c": "#ec789f"
+     },
+     {
+      "c": "#5a5a5a"
+     }
+    ]
+   },
+   {
+    "id": "remera_mujer_01",
+    "objeto": "remera_mujer_01",
+    "partes": [
+     {
+      "c": "#f6f6f6"
+     }
+    ]
+   },
+   {
+    "id": "remera_mujer_02",
+    "objeto": "remera_mujer_02",
+    "partes": [
+     {
+      "c": "#ec789f"
+     }
+    ]
+   },
+   {
+    "id": "remera_mujer_03",
+    "objeto": "remera_mujer_03",
+    "partes": [
+     {
+      "c": "#ec789f"
+     }
+    ]
+   }
+  ],
+  "pantalones": [
+   {
+    "id": "sin",
+    "objeto": null,
+    "vacia": true
+   },
+   {
+    "id": "Pants_01",
+    "objeto": "Pants_01",
+    "partes": [
+     {
+      "c": "#e47e7e"
+     }
+    ]
+   },
+   {
+    "id": "Pants_02",
+    "objeto": "Pants_02",
+    "forma": "Pants_02",
+    "partes": [
+     {
+      "c": "#e47e7e"
+     },
+     {
+      "c": "#e9a2a2"
+     }
+    ]
+   },
+   {
+    "id": "Pants_03",
+    "objeto": "Pants_03",
+    "partes": [
+     {
+      "c": "#e47e7e"
+     },
+     {
+      "c": "#e9a2a2"
+     }
+    ]
+   },
+   {
+    "id": "Pants_04",
+    "objeto": "Pants_04",
+    "partes": [
+     {
+      "c": "#e47e7e"
+     },
+     {
+      "c": "#ce7272"
+     }
+    ]
+   },
+   {
+    "id": "Pants_05",
+    "objeto": "Pants_05",
+    "partes": [
+     {
+      "c": "#e47e7e"
+     },
+     {
+      "c": "#e9a2a2"
+     }
+    ]
+   },
+   {
+    "id": "Pants_06",
+    "objeto": "Pants_06",
+    "partes": [
+     {
+      "c": "#e47e7e"
+     },
+     {
+      "c": "#ce7272"
+     }
+    ]
+   },
+   {
+    "id": "Pants_07",
+    "objeto": "Pants_07",
+    "partes": [
+     {
+      "c": "#e47e7e"
+     },
+     {
+      "c": "#ce7272"
+     }
+    ]
+   },
+   {
+    "id": "Pants_08",
+    "objeto": "Pants_08",
+    "partes": [
+     {
+      "c": "#e47e7e"
+     },
+     {
+      "c": "#ce7272"
+     }
+    ]
+   },
+   {
+    "id": "Pants_09",
+    "objeto": "Pants_09",
+    "forma": "Pants_02",
+    "partes": [
+     {
+      "c": "#e47e7e"
+     }
+    ]
+   },
+   {
+    "id": "pantalon_hombre_01",
+    "objeto": "pantalon_hombre_01",
+    "partes": [
+     {
+      "c": "#ec789f"
+     },
+     {
+      "c": "#5a5a5a"
+     }
+    ]
+   },
+   {
+    "id": "pantalon_hombre_02",
+    "objeto": "pantalon_hombre_02",
+    "partes": [
+     {
+      "c": "#ec789f"
+     }
+    ]
+   },
+   {
+    "id": "pantalon_hombre_03",
+    "objeto": "pantalon_hombre_03",
+    "partes": [
+     {
+      "c": "#ec789f"
+     }
+    ]
+   },
+   {
+    "id": "pantalon_mujer_01",
+    "objeto": "pantalon_mujer_01",
+    "partes": [
+     {
+      "c": "#ec789f"
+     }
+    ]
+   },
+   {
+    "id": "pantalon_mujer_02",
+    "objeto": "pantalon_mujer_02",
+    "partes": [
+     {
+      "c": "#ec789f"
+     }
+    ]
+   },
+   {
+    "id": "pantalon_mujer_03",
+    "objeto": "pantalon_mujer_03",
+    "partes": [
+     {
+      "c": "#ec789f"
+     }
+    ]
+   },
+   {
+    "id": "pantalon_mujer_04",
+    "objeto": "pantalon_mujer_04",
+    "partes": [
+     {
+      "c": "#ec789f"
+     }
+    ]
+   }
+  ],
+  "zapatillas": [
+   {
+    "id": "sin",
+    "objeto": null,
+    "vacia": true
+   },
+   {
+    "id": "Shoes_01",
+    "objeto": "Shoes_01",
+    "forma": "Shoes_01",
+    "partes": [
+     {
+      "c": "#cbab88"
+     },
+     {
+      "c": "#7d9481"
+     }
+    ]
+   },
+   {
+    "id": "Shoes_02",
+    "objeto": "Shoes_02",
+    "forma": "Shoes_01",
+    "partes": [
+     {
+      "c": "#858283"
+     },
+     {
+      "c": "#6f6b6b"
+     }
+    ]
+   },
+   {
+    "id": "Shoes_03",
+    "objeto": "Shoes_03",
+    "forma": "Shoes_01",
+    "partes": [
+     {
+      "c": "#ba997b"
+     },
+     {
+      "c": "#dabe99"
+     }
+    ]
+   },
+   {
+    "id": "Shoes_04",
+    "objeto": "Shoes_04",
+    "forma": "Shoes_04",
+    "partes": [
+     {
+      "c": "#f39583"
+     },
+     {
+      "c": "#e67a68"
+     }
+    ]
+   },
+   {
+    "id": "Shoes_05",
+    "objeto": "Shoes_05",
+    "forma": "Shoes_04",
+    "partes": [
+     {
+      "c": "#c7b4f7"
+     },
+     {
+      "c": "#ae92f3"
+     }
+    ]
+   },
+   {
+    "id": "Shoes_06",
+    "objeto": "Shoes_06",
+    "forma": "Shoes_04",
+    "partes": [
+     {
+      "c": "#93cd66"
+     },
+     {
+      "c": "#a9e771"
+     }
+    ]
+   },
+   {
+    "id": "Shoes_07",
+    "objeto": "Shoes_07",
+    "partes": [
+     {
+      "c": "#88de6c"
+     },
+     {
+      "c": "#f6fbf2"
+     }
+    ]
+   },
+   {
+    "id": "Shoes_08",
+    "objeto": "Shoes_08",
+    "forma": "Shoes_08",
+    "partes": [
+     {
+      "c": "#7c7678"
+     },
+     {
+      "c": "#f5dea1"
+     }
+    ]
+   },
+   {
+    "id": "Shoes_09",
+    "objeto": "Shoes_09",
+    "forma": "Shoes_08",
+    "partes": [
+     {
+      "c": "#7c7678"
+     },
+     {
+      "c": "#f49382"
+     }
+    ]
+   },
+   {
+    "id": "Shoes_10",
+    "objeto": "Shoes_10",
+    "forma": "Shoes_08",
+    "partes": [
+     {
+      "c": "#7c7678"
+     },
+     {
+      "c": "#84b6f0"
+     }
+    ]
+   },
+   {
+    "id": "Shoes_11",
+    "objeto": "Shoes_11",
+    "forma": "Shoes_08",
+    "partes": [
+     {
+      "c": "#7c7678"
+     },
+     {
+      "c": "#c4eb77"
+     }
+    ]
+   },
+   {
+    "id": "Shoes_12",
+    "objeto": "Shoes_12",
+    "partes": [
+     {
+      "c": "#af9375"
+     },
+     {
+      "c": "#f0dec9"
+     }
+    ]
+   },
+   {
+    "id": "Shoes_13",
+    "objeto": "Shoes_13",
+    "forma": "Shoes_13",
+    "partes": [
+     {
+      "c": "#79a5ec"
+     },
+     {
+      "c": "#f1f7fb"
+     }
+    ]
+   },
+   {
+    "id": "Shoes_14",
+    "objeto": "Shoes_14",
+    "forma": "Shoes_13",
+    "partes": [
+     {
+      "c": "#f29783"
+     },
+     {
+      "c": "#fceff0"
+     }
+    ]
+   },
+   {
+    "id": "Shoes_15",
+    "objeto": "Shoes_15",
+    "forma": "Shoes_13",
+    "partes": [
+     {
+      "c": "#f2d592"
+     },
+     {
+      "c": "#ecd479"
+     }
+    ]
+   },
+   {
+    "id": "Shoes_16",
+    "objeto": "Shoes_16",
+    "partes": [
+     {
+      "c": "#ed7ba5"
+     },
+     {
+      "c": "#f5a1bd"
+     }
+    ]
+   },
+   {
+    "id": "Shoes_17",
+    "objeto": "Shoes_17",
+    "forma": "Shoes_17",
+    "partes": [
+     {
+      "c": "#e7e5e6"
+     },
+     {
+      "c": "#798fec"
+     }
+    ]
+   },
+   {
+    "id": "Shoes_18",
+    "objeto": "Shoes_18",
+    "forma": "Shoes_17",
+    "partes": [
+     {
+      "c": "#e7e5e6"
+     },
+     {
+      "c": "#f29b85"
+     }
+    ]
+   },
+   {
+    "id": "Shoes_19",
+    "objeto": "Shoes_19",
+    "forma": "Shoes_17",
+    "partes": [
+     {
+      "c": "#f292b2"
+     },
+     {
+      "c": "#848282"
+     }
+    ]
+   },
+   {
+    "id": "Shoes_20",
+    "objeto": "Shoes_20",
+    "forma": "Shoes_20",
+    "partes": [
+     {
+      "c": "#858283"
+     },
+     {
+      "c": "#e6e5e6"
+     }
+    ]
+   },
+   {
+    "id": "Shoes_21",
+    "objeto": "Shoes_21",
+    "forma": "Shoes_20",
+    "partes": [
+     {
+      "c": "#e9e8e9"
+     },
+     {
+      "c": "#dec4a2"
+     }
+    ]
+   },
+   {
+    "id": "Shoes_22",
+    "objeto": "Shoes_22",
+    "forma": "Shoes_20",
+    "partes": [
+     {
+      "c": "#e2e1e1"
+     }
+    ]
+   },
+   {
+    "id": "Shoes_23",
+    "objeto": "Shoes_23",
+    "forma": "Shoes_23",
+    "partes": [
+     {
+      "c": "#f08d79"
+     },
+     {
+      "c": "#7c7879"
+     }
+    ]
+   },
+   {
+    "id": "Shoes_24",
+    "objeto": "Shoes_24",
+    "forma": "Shoes_23",
+    "partes": [
+     {
+      "c": "#f1c389"
+     },
+     {
+      "c": "#dbd7d8"
+     }
+    ]
+   },
+   {
+    "id": "Shoes_25",
+    "objeto": "Shoes_25",
+    "forma": "Shoes_23",
+    "partes": [
+     {
+      "c": "#938f90"
+     },
+     {
+      "c": "#7d7779"
+     }
+    ]
+   },
+   {
+    "id": "Shoes_26",
+    "objeto": "Shoes_26",
+    "partes": [
+     {
+      "c": "#807678"
+     },
+     {
+      "c": "#a59fa1"
+     }
+    ]
+   },
+   {
+    "id": "Shoes_27",
+    "objeto": "Shoes_27",
+    "forma": "Shoes_27",
+    "partes": [
+     {
+      "c": "#edeced"
+     },
+     {
+      "c": "#f29b85"
+     }
+    ]
+   },
+   {
+    "id": "Shoes_28",
+    "objeto": "Shoes_28",
+    "forma": "Shoes_27",
+    "partes": [
+     {
+      "c": "#edeced"
+     },
+     {
+      "c": "#bb85f0"
+     }
+    ]
+   }
+  ],
+  "medias": [
+   {
+    "id": "sin",
+    "objeto": null,
+    "vacia": true
+   },
+   {
+    "id": "Socks_01",
+    "objeto": "Socks_01",
+    "forma": "Socks_01",
+    "partes": [
+     {
+      "c": "#ededed"
+     }
+    ]
+   },
+   {
+    "id": "Socks_02",
+    "objeto": "Socks_02",
+    "forma": "Socks_02",
+    "partes": [
+     {
+      "c": "#ededed"
+     },
+     {
+      "c": "#4e4e4e"
+     }
+    ]
+   },
+   {
+    "id": "Socks_03",
+    "objeto": "Socks_03",
+    "forma": "Socks_03",
+    "partes": [
+     {
+      "c": "#575555"
+     },
+     {
+      "c": "#e9e8e9"
+     }
+    ]
+   },
+   {
+    "id": "Socks_04",
+    "objeto": "Socks_04",
+    "forma": "Socks_01",
+    "partes": [
+     {
+      "c": "#535353"
+     }
+    ]
+   },
+   {
+    "id": "Socks_05",
+    "objeto": "Socks_05",
+    "forma": "Socks_02",
+    "partes": [
+     {
+      "c": "#555353"
+     },
+     {
+      "c": "#f3f2f2"
+     }
+    ]
+   },
+   {
+    "id": "Socks_06",
+    "objeto": "Socks_06",
+    "forma": "Socks_03",
+    "partes": [
+     {
+      "c": "#ededed"
+     },
+     {
+      "c": "#5a5858"
+     }
+    ]
+   }
+  ],
+  "guantes": [
+   {
+    "id": "sin",
+    "objeto": null,
+    "vacia": true
+   },
+   {
+    "id": "Gloves_01",
+    "objeto": "Gloves_01",
+    "forma": "Gloves_01",
+    "partes": [
+     {
+      "c": "#7d8194"
+     },
+     {
+      "c": "#6c6f7e"
+     }
+    ]
+   },
+   {
+    "id": "Gloves_02",
+    "objeto": "Gloves_02",
+    "forma": "Gloves_01",
+    "partes": [
+     {
+      "c": "#7a7777"
+     },
+     {
+      "c": "#686364"
+     }
+    ]
+   },
+   {
+    "id": "Gloves_03",
+    "objeto": "Gloves_03",
+    "forma": "Gloves_03",
+    "partes": [
+     {
+      "c": "#787576"
+     },
+     {
+      "c": "#6a6364"
+     }
+    ]
+   },
+   {
+    "id": "Gloves_04",
+    "objeto": "Gloves_04",
+    "forma": "Gloves_03",
+    "partes": [
+     {
+      "c": "#f19983"
+     }
+    ]
+   },
+   {
+    "id": "Gloves_05",
+    "objeto": "Gloves_05",
+    "forma": "Gloves_03",
+    "partes": [
+     {
+      "c": "#85c2f0"
+     },
+     {
+      "c": "#70bde5"
+     }
+    ]
+   },
+   {
+    "id": "Gloves_06",
+    "objeto": "Gloves_06",
+    "forma": "Gloves_03",
+    "partes": [
+     {
+      "c": "#f6aec4"
+     }
+    ]
+   },
+   {
+    "id": "Gloves_07",
+    "objeto": "Gloves_07",
+    "forma": "Gloves_03",
+    "partes": [
+     {
+      "c": "#f5e29e"
+     }
+    ]
+   },
+   {
+    "id": "Gloves_08",
+    "objeto": "Gloves_08",
+    "forma": "Gloves_08",
+    "partes": [
+     {
+      "c": "#6d6a6b"
+     }
+    ]
+   },
+   {
+    "id": "Gloves_09",
+    "objeto": "Gloves_09",
+    "forma": "Gloves_08",
+    "partes": [
+     {
+      "c": "#797576"
+     },
+     {
+      "c": "#e9e7e8"
+     }
+    ]
+   },
+   {
+    "id": "Gloves_10",
+    "objeto": "Gloves_10",
+    "forma": "Gloves_08",
+    "partes": [
+     {
+      "c": "#f39986"
+     },
+     {
+      "c": "#9cd1f5"
+     }
+    ]
+   },
+   {
+    "id": "Gloves_11",
+    "objeto": "Gloves_11",
+    "forma": "Gloves_08",
+    "partes": [
+     {
+      "c": "#797576"
+     },
+     {
+      "c": "#9cd1f5"
+     }
+    ]
+   },
+   {
+    "id": "Gloves_12",
+    "objeto": "Gloves_12",
+    "forma": "Gloves_08",
+    "partes": [
+     {
+      "c": "#797576"
+     },
+     {
+      "c": "#f39683"
+     }
+    ]
+   },
+   {
+    "id": "Gloves_13",
+    "objeto": "Gloves_13",
+    "forma": "Gloves_08",
+    "partes": [
+     {
+      "c": "#f5e1a2"
+     },
+     {
+      "c": "#a5cb84"
+     }
+    ]
+   },
+   {
+    "id": "Gloves_14",
+    "objeto": "Gloves_14",
+    "partes": [
+     {
+      "c": "#646161"
+     }
+    ]
+   }
+  ],
+  "anteojos": [
+   {
+    "id": "sin",
+    "objeto": null,
+    "vacia": true
+   },
+   {
+    "id": "anteojos_01",
+    "objeto": "Glasses_01"
+   },
+   {
+    "id": "anteojos_02",
+    "objeto": "Glasses_02"
+   },
+   {
+    "id": "anteojos_03",
+    "objeto": "Glasses_03"
+   },
+   {
+    "id": "anteojos_04",
+    "objeto": "Glasses_04"
+   },
+   {
+    "id": "anteojos_05",
+    "objeto": "Glasses_05"
+   },
+   {
+    "id": "anteojos_06",
+    "objeto": "Glasses_06"
+   },
+   {
+    "id": "anteojos_07",
+    "objeto": "Glasses_07"
+   },
+   {
+    "id": "anteojos_08",
+    "objeto": "Glasses_08"
+   },
+   {
+    "id": "anteojos_09",
+    "objeto": "Glasses_09"
+   },
+   {
+    "id": "anteojos_10",
+    "objeto": "Glasses_10"
+   },
+   {
+    "id": "anteojos_11",
+    "objeto": "Glasses_11"
+   },
+   {
+    "id": "anteojos_12",
+    "objeto": "Glasses_12"
+   },
+   {
+    "id": "anteojos_13",
+    "objeto": "Glasses_13"
+   },
+   {
+    "id": "anteojos_14",
+    "objeto": "Glasses_14"
+   },
+   {
+    "id": "anteojos_15",
+    "objeto": "Glasses_15"
+   },
+   {
+    "id": "anteojos_16",
+    "objeto": "Glasses_16"
+   },
+   {
+    "id": "anteojos_17",
+    "objeto": "Glasses_17"
+   },
+   {
+    "id": "anteojos_18",
+    "objeto": "Glasses_18"
+   },
+   {
+    "id": "anteojos_19",
+    "objeto": "Glasses_19"
+   },
+   {
+    "id": "anteojos_20",
+    "objeto": "Glasses_20"
+   },
+   {
+    "id": "anteojos_21",
+    "objeto": "Glasses_21"
+   }
+  ],
+  "sombreros": [
+   {
+    "id": "sin",
+    "objeto": null,
+    "vacia": true
+   },
+   {
+    "id": "sombrero_01",
+    "objeto": "Hat_01",
+    "forma": "Hat_01",
+    "partes": [
+     {
+      "c": "#ee9078"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_02",
+    "objeto": "Hat_02",
+    "forma": "Hat_01",
+    "partes": [
+     {
+      "c": "#ffde88"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_03",
+    "objeto": "Hat_03",
+    "forma": "Hat_03",
+    "partes": [
+     {
+      "c": "#a886f0"
+     },
+     {
+      "c": "#b7a0f5"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_04",
+    "objeto": "Hat_04",
+    "forma": "Hat_03",
+    "partes": [
+     {
+      "c": "#ffe399"
+     },
+     {
+      "c": "#ffda76"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_05",
+    "objeto": "Hat_05",
+    "forma": "Hat_03",
+    "partes": [
+     {
+      "c": "#848182"
+     },
+     {
+      "c": "#9a9899"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_06",
+    "objeto": "Hat_06",
+    "partes": [
+     {
+      "c": "#6d6d80"
+     },
+     {
+      "c": "#7e7d93"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_07",
+    "objeto": "Hat_07",
+    "partes": [
+     {
+      "c": "#f5a2c0"
+     },
+     {
+      "c": "#f088a8"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_08",
+    "objeto": "Hat_08",
+    "forma": "Hat_08",
+    "partes": [
+     {
+      "c": "#e67867"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_09",
+    "objeto": "Hat_09",
+    "forma": "Hat_08",
+    "partes": [
+     {
+      "c": "#83abf0"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_10",
+    "objeto": "Hat_10",
+    "partes": [
+     {
+      "c": "#7c8493"
+     },
+     {
+      "c": "#ffe498"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_11",
+    "objeto": "Hat_11",
+    "forma": "Hat_11",
+    "partes": [
+     {
+      "c": "#cbae88"
+     },
+     {
+      "c": "#ffd786"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_12",
+    "objeto": "Hat_12",
+    "forma": "Hat_11",
+    "partes": [
+     {
+      "c": "#abcbf6"
+     },
+     {
+      "c": "#f58c7d"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_13",
+    "objeto": "Hat_13",
+    "partes": [
+     {
+      "c": "#f7ecc4"
+     },
+     {
+      "c": "#878384"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_14",
+    "objeto": "Hat_14",
+    "partes": [
+     {
+      "c": "#c59c84"
+     },
+     {
+      "c": "#a27c6c"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_15",
+    "objeto": "Hat_15",
+    "partes": [
+     {
+      "c": "#646472"
+     },
+     {
+      "c": "#767689"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_16",
+    "objeto": "Hat_16",
+    "partes": [
+     {
+      "c": "#e9e1de"
+     },
+     {
+      "c": "#cec0b9"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_17",
+    "objeto": "Hat_17",
+    "partes": [
+     {
+      "c": "#977e66"
+     },
+     {
+      "c": "#a5886d"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_18",
+    "objeto": "Hat_18",
+    "partes": [
+     {
+      "c": "#ffd677"
+     },
+     {
+      "c": "#ffcc55"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_19",
+    "objeto": "Hat_19",
+    "partes": [
+     {
+      "c": "#b5d66a"
+     },
+     {
+      "c": "#9bc060"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_20",
+    "objeto": "Hat_20",
+    "partes": [
+     {
+      "c": "#f5a2b0"
+     },
+     {
+      "c": "#f08799"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_21",
+    "objeto": "Hat_21",
+    "partes": [
+     {
+      "c": "#ffc088"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_22",
+    "objeto": "Hat_22",
+    "partes": [
+     {
+      "c": "#93cb85"
+     },
+     {
+      "c": "#73b294"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_23",
+    "objeto": "Hat_23",
+    "forma": "Hat_23",
+    "partes": [
+     {
+      "c": "#ffd888"
+     },
+     {
+      "c": "#fff6d8"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_24",
+    "objeto": "Hat_24",
+    "partes": [
+     {
+      "c": "#eca879"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_25",
+    "objeto": "Hat_25",
+    "partes": [
+     {
+      "c": "#f6abb9"
+     },
+     {
+      "c": "#b0ca83"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_26",
+    "objeto": "Hat_26",
+    "forma": "Hat_26",
+    "partes": [
+     {
+      "c": "#6ca3df"
+     },
+     {
+      "c": "#f0efef"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_27",
+    "objeto": "Hat_27",
+    "forma": "Hat_26",
+    "partes": [
+     {
+      "c": "#e97566"
+     },
+     {
+      "c": "#f0efef"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_28",
+    "objeto": "Hat_28",
+    "forma": "Hat_26",
+    "partes": [
+     {
+      "c": "#6ad693"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_29",
+    "objeto": "Hat_29",
+    "forma": "Hat_26",
+    "partes": [
+     {
+      "c": "#a878ec"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_30",
+    "objeto": "Hat_30",
+    "partes": [
+     {
+      "c": "#938e8f"
+     },
+     {
+      "c": "#d9d8d8"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_31",
+    "objeto": "Hat_31",
+    "partes": [
+     {
+      "c": "#e7e5e6"
+     },
+     {
+      "c": "#7b7677"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_32",
+    "objeto": "Hat_32",
+    "forma": "Hat_23",
+    "partes": [
+     {
+      "c": "#d59e68"
+     },
+     {
+      "c": "#f5cda3"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_33",
+    "objeto": "Hat_33",
+    "partes": [
+     {
+      "c": "#ef8773"
+     },
+     {
+      "c": "#f6d5ab"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_34",
+    "objeto": "Hat_34",
+    "partes": [
+     {
+      "c": "#f18473"
+     },
+     {
+      "c": "#ffdc88"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_35",
+    "objeto": "Hat_35",
+    "partes": [
+     {
+      "c": "#85cb93"
+     },
+     {
+      "c": "#85c6f0"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_36",
+    "objeto": "Hat_36",
+    "partes": [
+     {
+      "c": "#7ed2ff"
+     },
+     {
+      "c": "#e8826c"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_37",
+    "objeto": "Hat_37",
+    "partes": [
+     {
+      "c": "#87a76d"
+     },
+     {
+      "c": "#809e68"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_38",
+    "objeto": "Hat_38",
+    "partes": [
+     {
+      "c": "#ffdc70"
+     },
+     {
+      "c": "#85c9ff"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_39",
+    "objeto": "Hat_39",
+    "partes": [
+     {
+      "c": "#d5d9e4"
+     },
+     {
+      "c": "#868484"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_40",
+    "objeto": "Hat_40",
+    "partes": [
+     {
+      "c": "#e5d2b1"
+     },
+     {
+      "c": "#d9bd96"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_41",
+    "objeto": "Hat_41",
+    "partes": [
+     {
+      "c": "#c8c8da"
+     },
+     {
+      "c": "#dcdce9"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_42",
+    "objeto": "Hat_42",
+    "partes": [
+     {
+      "c": "#ffc54e"
+     },
+     {
+      "c": "#ffde7e"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_43",
+    "objeto": "Hat_43",
+    "partes": [
+     {
+      "c": "#b79af5"
+     },
+     {
+      "c": "#94b0f3"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_44",
+    "objeto": "Hat_44",
+    "partes": [
+     {
+      "c": "#e1b76d"
+     },
+     {
+      "c": "#f5d9a6"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_45",
+    "objeto": "Hat_45",
+    "partes": [
+     {
+      "c": "#64ca9e"
+     },
+     {
+      "c": "#fbfbfb"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_46",
+    "objeto": "Hat_46",
+    "partes": [
+     {
+      "c": "#ecce78"
+     },
+     {
+      "c": "#d5cbc3"
+     }
+    ]
+   },
+   {
+    "id": "sombrero_47",
+    "objeto": "Hat_47",
+    "partes": [
+     {
+      "c": "#e3e5ee"
+     },
+     {
+      "c": "#c8a286"
+     }
+    ]
+   }
+  ],
+  "extras": [
+   {
+    "id": "sin",
+    "objeto": null,
+    "vacia": true
+   },
+   {
+    "id": "Custom_01",
+    "objeto": "Custom_01"
+   },
+   {
+    "id": "Custom_02",
+    "objeto": "Custom_02"
+   },
+   {
+    "id": "Custom_03",
+    "objeto": "Custom_03"
+   },
+   {
+    "id": "Custom_04",
+    "objeto": "Custom_04"
+   },
+   {
+    "id": "Custom_05",
+    "objeto": "Custom_05"
+   },
+   {
+    "id": "Custom_06",
+    "objeto": "Custom_06"
+   },
+   {
+    "id": "Custom_07",
+    "objeto": "Custom_07"
+   },
+   {
+    "id": "Custom_08",
+    "objeto": "Custom_08"
+   },
+   {
+    "id": "Custom_09",
+    "objeto": "Custom_09"
+   },
+   {
+    "id": "Custom_10",
+    "objeto": "Custom_10"
+   },
+   {
+    "id": "Custom_11",
+    "objeto": "Custom_11"
+   },
+   {
+    "id": "Custom_12",
+    "objeto": "Custom_12"
+   },
+   {
+    "id": "Custom_13",
+    "objeto": "Custom_13"
+   },
+   {
+    "id": "Custom_14",
+    "objeto": "Custom_14"
+   },
+   {
+    "id": "Custom_15",
+    "objeto": "Custom_15"
+   },
+   {
+    "id": "Custom_16",
+    "objeto": "Custom_16"
+   }
+  ],
+  "pelos": [
+   {
+    "id": "sin",
+    "objeto": null,
+    "vacia": true
+   },
+   {
+    "id": "pelo_hombre_01",
+    "objeto": "pelo_hombre_01",
+    "partes": [
+     {
+      "c": "#967353"
+     }
+    ]
+   },
+   {
+    "id": "pelo_hombre_02",
+    "objeto": "pelo_hombre_02",
+    "partes": [
+     {
+      "c": "#967353"
+     }
+    ]
+   },
+   {
+    "id": "pelo_hombre_03",
+    "objeto": "pelo_hombre_03",
+    "partes": [
+     {
+      "c": "#967353"
+     }
+    ]
+   },
+   {
+    "id": "pelo_mujer_01",
+    "objeto": "pelo_mujer_01",
+    "partes": [
+     {
+      "c": "#967353"
+     },
+     {
+      "c": "#f6f6f6"
+     }
+    ]
+   },
+   {
+    "id": "pelo_mujer_02",
+    "objeto": "pelo_mujer_02",
+    "partes": [
+     {
+      "c": "#967353"
+     }
+    ]
+   },
+   {
+    "id": "pelo_mujer_03",
+    "objeto": "pelo_mujer_03",
+    "partes": [
+     {
+      "c": "#967353"
+     },
+     {
+      "c": "#f6f6f6"
+     }
+    ]
+   }
+  ],
+  "barbas": [
+   {
+    "id": "sin",
+    "objeto": null,
+    "vacia": true
+   }
+  ],
+  "caretas": [
+   {
+    "id": "sin",
+    "objeto": null,
+    "vacia": true
+   }
+  ],
+  "espalda": [
+   {
+    "id": "sin",
+    "objeto": null,
+    "vacia": true
+   }
+  ],
+  "mano": [
+   {
+    "id": "sin",
+    "objeto": null,
+    "vacia": true
+   }
+  ],
+  "ojos": [
+   {
+    "id": "sin",
+    "objeto": null,
+    "vacia": true
+   },
+   {
+    "id": "ojos_01",
+    "objeto": "ojos_01"
+   },
+   {
+    "id": "ojos_02",
+    "objeto": "ojos_02"
+   },
+   {
+    "id": "ojos_03",
+    "objeto": "ojos_03"
+   },
+   {
+    "id": "ojos_04",
+    "objeto": "ojos_04"
+   },
+   {
+    "id": "ojos_05",
+    "objeto": "ojos_05"
+   },
+   {
+    "id": "ojos_06",
+    "objeto": "ojos_06"
+   },
+   {
+    "id": "ojos_felices",
+    "objeto": "ojos_felices"
+   },
+   {
+    "id": "ojos_grandes",
+    "objeto": "ojos_grandes"
+   }
+  ],
+  "cejas": [
+   {
+    "id": "sin",
+    "objeto": null,
+    "vacia": true
+   },
+   {
+    "id": "cejas_01",
+    "objeto": "cejas_01"
+   },
+   {
+    "id": "cejas_02",
+    "objeto": "cejas_02"
+   },
+   {
+    "id": "cejas_03",
+    "objeto": "cejas_03"
+   },
+   {
+    "id": "cejas_04",
+    "objeto": "cejas_04"
+   },
+   {
+    "id": "cejas_05",
+    "objeto": "cejas_05"
+   },
+   {
+    "id": "cejas_arqueadas",
+    "objeto": "cejas_arqueadas"
+   },
+   {
+    "id": "cejas_enojadas",
+    "objeto": "cejas_enojadas"
+   }
+  ],
+  "bocas": [
+   {
+    "id": "sin",
+    "objeto": null,
+    "vacia": true
+   },
+   {
+    "id": "bocas_01",
+    "objeto": "bocas_01"
+   },
+   {
+    "id": "bocas_02",
+    "objeto": "bocas_02"
+   },
+   {
+    "id": "bocas_03",
+    "objeto": "bocas_03"
+   },
+   {
+    "id": "bocas_o",
+    "objeto": "bocas_o"
+   },
+   {
+    "id": "bocas_sonrisa",
+    "objeto": "bocas_sonrisa"
+   }
+  ]
+ },
+ "migrar_caras": {
+  "Face_01": {
+   "ojos": "ojos_01",
+   "cejas": "sin",
+   "bocas": "sin"
+  },
+  "Face_02": {
+   "ojos": "ojos_01",
+   "cejas": "cejas_01",
+   "bocas": "sin"
+  },
+  "Face_03": {
+   "ojos": "ojos_01",
+   "cejas": "cejas_02",
+   "bocas": "sin"
+  },
+  "Face_04": {
+   "ojos": "ojos_01",
+   "cejas": "cejas_03",
+   "bocas": "sin"
+  },
+  "Face_05": {
+   "ojos": "ojos_01",
+   "cejas": "cejas_04",
+   "bocas": "sin"
+  },
+  "Face_06": {
+   "ojos": "ojos_01",
+   "cejas": "cejas_05",
+   "bocas": "sin"
+  },
+  "Face_07": {
+   "ojos": "ojos_02",
+   "cejas": "sin",
+   "bocas": "bocas_01"
+  },
+  "Face_08": {
+   "ojos": "ojos_03",
+   "cejas": "sin",
+   "bocas": "bocas_01"
+  },
+  "Face_09": {
+   "ojos": "ojos_04",
+   "cejas": "sin",
+   "bocas": "bocas_01"
+  },
+  "Face_10": {
+   "ojos": "ojos_05",
+   "cejas": "sin",
+   "bocas": "bocas_02"
+  },
+  "Face_11": {
+   "ojos": "ojos_06",
+   "cejas": "sin",
+   "bocas": "bocas_03"
+  }
+ }
+}

@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Editor de Kot</title>
+<!-- Prototipo del editor de Kot, estilo Mii: elegís cada pieza por su imagen.
+     Usa el Kot real (el Stickman, lo arma kot-modelo.js): kot.glb, miniaturas y kot.json salen de kot_base.blend con
+     consola/kots/herramientas/exportar_web.py. 🤸 abre la prueba de ragdoll (ragdoll-kot.html) con este Kot.
+     Se abre desde la puerta (consola/perfil): Diseñar mi Kot. También se puede servir la raíz del repo y abrir
+     /consola/perfil/editor-kot/editor-kot.html. -->
+<style>
+:root {
+  --fondo: #eef2f6; --tarjeta: #ffffff; --tinta: #1f2a36; --suave: #6f7d8c; --borde: rgba(31, 42, 54, .1);
+  --acento: #2f6ff0; --hundido: #e3e9ef; --cielo-a: #dfe8f2; --cielo-b: #f6f8fb; --mini: #e9edf2;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --fondo: #10161f; --tarjeta: #1f2836; --tinta: #e9eef5; --suave: #8693a5; --borde: rgba(255, 255, 255, .08);
+    --acento: #4f86ff; --hundido: #18202b; --cielo-a: #1a2533; --cielo-b: #10161f; --mini: #273243; }
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--fondo); color: var(--tinta); font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  display: flex; flex-direction: column; max-width: 480px; margin: 0 auto; overflow: hidden; }
+button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; }
+
+.barra { display: flex; align-items: center; justify-content: space-between; padding: max(10px, env(safe-area-inset-top)) 16px 8px; }
+.barra h1 { margin: 0; font-size: 22px; letter-spacing: -.4px; }
+.barra small { display: block; color: var(--suave); font-size: 13px; }
+.acciones { display: flex; gap: 8px; }
+.icono { width: 40px; height: 40px; border-radius: 50%; background: var(--tarjeta); border: 1px solid var(--borde); font-size: 18px; }
+
+.vista { position: relative; flex: 0 0 38vh; margin: 0 16px; border-radius: 26px; overflow: hidden;
+  background: linear-gradient(var(--cielo-a), var(--cielo-b)); border: 1px solid var(--borde); touch-action: none; }
+.vista canvas { display: block; width: 100%; height: 100%; }
+.cargando { position: absolute; inset: 0; display: grid; place-items: center; color: var(--suave); font-size: 14px; }
+
+/* Partes: íconos como la fila de la Wii */
+.partes { display: flex; gap: 6px; padding: 10px 16px 6px; overflow-x: auto; scrollbar-width: none; }
+.partes::-webkit-scrollbar { display: none; }
+.partes button { flex: 0 0 auto; width: 58px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 0 5px;
+  border-radius: 16px; font-size: 11px; font-weight: 600; color: var(--suave); border: 2px solid transparent; }
+.partes button img, .partes button span.emoji { width: 40px; height: 40px; border-radius: 12px; background: var(--mini); object-fit: cover; display: grid; place-items: center; font-size: 22px; }
+.partes button.activa { border-color: var(--acento); color: var(--tinta); background: var(--tarjeta); }
+
+
+.panel { flex: 1; overflow-y: auto; padding: 0 16px 12px; display: flex; flex-direction: column; gap: 14px; }
+.grilla { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.grilla button { aspect-ratio: 1; border-radius: 14px; background: var(--mini); border: 3px solid transparent; padding: 0; overflow: hidden; position: relative; }
+.grilla button img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.grilla button.activo { border-color: var(--acento); }
+.grilla button.vacio::after { content: "✕"; position: absolute; inset: 0; display: grid; place-items: center; font-size: 26px; color: var(--suave); }
+.grilla .punto-choque { position: absolute; top: 5px; right: 5px; width: 10px; height: 10px; border-radius: 50%;
+  background: #ff8c1a; box-shadow: 0 0 0 2px var(--mini), 0 1px 3px rgba(0, 0, 0, .3); pointer-events: none; }
+
+.titulo { font-size: 12px; font-weight: 700; color: var(--suave); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 8px; }
+.colores { display: flex; flex-wrap: wrap; gap: 9px; }
+.colores button { width: 36px; height: 36px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); border: 3px solid transparent; }
+.colores button.activo { border-color: var(--tinta); }
+
+.pie { display: flex; gap: 10px; padding: 10px 16px max(14px, env(safe-area-inset-bottom)); border-top: 1px solid var(--borde); }
+.pie button { flex: 1; padding: 14px; border-radius: 18px; font-size: 17px; font-weight: 700; }
+.secundario { background: var(--hundido); }
+.principal { background: var(--acento); color: #fff !important; }
+.aviso { position: fixed; left: 50%; bottom: 96px; transform: translate(-50%, 20px); opacity: 0; background: var(--tinta); color: var(--fondo);
+  padding: 10px 18px; border-radius: 999px; font-weight: 600; transition: .25s; pointer-events: none; }
+.aviso.ver { opacity: 1; transform: translate(-50%, 0); }
+.aviso-choque { position: fixed; left: 50%; bottom: 92px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; z-index: 6;
+  display: flex; align-items: center; gap: 10px; max-width: 92%; padding: 9px 10px 9px 15px; border-radius: 16px;
+  background: var(--tarjeta); color: var(--tinta); border: 1px solid var(--borde); box-shadow: 0 8px 24px rgba(0, 0, 0, .22);
+  font-size: 13px; font-weight: 600; line-height: 1.25; transition: .25s; }
+.aviso-choque.ver { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+.aviso-choque button { flex: 0 0 auto; padding: 6px 9px; border-radius: 10px; background: var(--hundido); color: var(--acento); font-weight: 700; }
+
+.sub-tabs button.activo { background: var(--acento); color: #fff; border-color: var(--acento); }
+</style>
+<script type="importmap">{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+  "cannon-es": "https://unpkg.com/cannon-es@0.20.0/dist/cannon-es.js"
+} }</script>
+</head>
+<body>
+  <header class="barra">
+    <div><h1>Tu Kot</h1><small>Agarralo o empujalo · arrastrá al costado para girarlo</small></div>
+    <div class="acciones"><button class="icono" id="volver" aria-label="Volver">←</button><button class="icono" id="ragdoll" aria-label="Probar el ragdoll">🤸</button><button class="icono" id="deshacer" aria-label="Deshacer">↶</button></div>
+  </header>
+  <div class="vista" id="vista"><div class="cargando" id="cargando">Cargando tu Kot…</div></div>
+  <nav class="partes" id="partes"></nav>
+  <section class="panel" id="panel"></section>
+  <footer class="pie">
+    <button class="secundario" id="azar">🎲 Al azar</button>
+    <button class="principal" id="listo">Listo</button>
+  </footer>
+  <div class="aviso" id="aviso">Guardado</div>
+  <div class="aviso-choque" id="aviso-choque"><span id="aviso-choque-texto"></span><button id="aviso-choque-deshacer">Deshacer</button></div>
+
+<script type="module">
+import * as THREE from "three";
+import { cargarKot, RUTA_MINIS, KOT_INICIAL, PELOS, COLORES, copiar, cargarBorrador, guardarBorrador, kotAlAzar } from "./kot-modelo.js";
+import { iniciarChoques, TIPOS_CON_CHOQUE, NOMBRE_PIEZA } from "./choques.js";
+import { Trapo } from "./kot-trapo.js";
+
+// Embebido en la puerta (index.html) el editor es el paso 2 del mismo recorrido: "Listo" le avisa
+// al padre y la puerta guarda el Kot en el perfil. Suelto (página propia) sigue como siempre.
+const embebido = window.parent !== window;
+const parametros = new URLSearchParams(location.search);
+const origen = parametros.get("origen");
+const avisarAlPadre = (tipo, datos = {}) => {
+  if (embebido) window.parent.postMessage({ kochos: tipo, ...datos }, location.origin);
+};
+
+// El botón de volver se conecta antes de cargar el .glb: si la carga falla, igual se puede salir.
+document.getElementById("volver").onclick = () => {
+  if (embebido) { avisarAlPadre("volver"); return; }
+  if (origen) { location.href = "../index.html?origen=editor"; return; }
+  history.back();
+};
+
+// En el paso 2 la puerta ya puso el nombre: el editor no necesita su propia barra de marca.
+if (embebido) {
+  const nombre = (parametros.get("nombre") || "").trim();
+  document.querySelector(".barra h1").textContent = "Tu Kot";
+  document.querySelector(".barra small").textContent = nombre ? `Paso 2 de 2 · ${nombre}` : "Paso 2 de 2";
+  document.getElementById("ragdoll").style.display = "none";
+  document.getElementById("volver").setAttribute("aria-label", "Volver al perfil");
+  document.title = "Tu Kot · kochOS";
+}
+
+// Tipos de pieza (las subcolecciones de 2_PIEZAS en kot_base.blend), en el orden del menú. Los que no estén acá van al final.
+const TIPOS = {
+  caras: { nombre: "Cara", encuadre: "cabeza" }, pelos: { nombre: "Pelo", encuadre: "cabeza", colorPelo: true },
+  barbas: { nombre: "Barba", encuadre: "cabeza", colorPelo: true }, anteojos: { nombre: "Anteojos", encuadre: "cabeza" },
+  sombreros: { nombre: "Sombrero", encuadre: "cabeza" }, caretas: { nombre: "Careta", encuadre: "cabeza" },
+  remeras: { nombre: "Remera", encuadre: "cuerpo" }, pantalones: { nombre: "Pantalón", encuadre: "cuerpo" },
+  medias: { nombre: "Medias", encuadre: "pies" }, zapatillas: { nombre: "Zapatillas", encuadre: "pies" },
+  guantes: { nombre: "Guantes", encuadre: "cuerpo" },
+  color: { nombre: "Color", encuadre: "cuerpo", subTabs: true },
+};
+// Los accesorios (espadas, capas, narices...) son para los juegos: no entran al editor.
+const OCULTOS = new Set(["mano", "espalda", "extras"]);
+
+let kot = { ...copiar(KOT_INICIAL), ...cargarBorrador() };
+let colorSubTab = "cuerpo"; // "cuerpo" | "pelo"
+const historial = [];
+
+// --- Escena -------------------------------------------------------------------------------
+const vista = document.getElementById("vista");
+const render = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+render.setPixelRatio(Math.min(devicePixelRatio, 2));
+render.outputColorSpace = THREE.SRGBColorSpace;
+vista.prepend(render.domElement);
+
+const escena = new THREE.Scene();
+const camara = new THREE.PerspectiveCamera(28, 1, .1, 50);
+escena.add(new THREE.HemisphereLight(0xffffff, 0x8899aa, 2.2));
+const sol = new THREE.DirectionalLight(0xffffff, 1.8);
+sol.position.set(1.5, 3, 3);
+escena.add(sol);
+const piso = new THREE.Mesh(new THREE.CylinderGeometry(.75, .82, .08, 9), new THREE.MeshLambertMaterial({ color: "#cfd8e3", flatShading: true }));
+piso.position.y = -.04;
+escena.add(piso);
+
+const giro = new THREE.Group();
+const salto = new THREE.Group();
+giro.add(salto);
+escena.add(giro);
+
+// --- Kot real (.glb): lo arma kot-modelo.js ----------------------------------------------
+const loadPromise = cargarKot();
+const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout cargando kot.glb (30s)")), 30000));
+const modelo = await Promise.race([loadPromise, timeoutPromise]).catch((e) => {
+  console.error("No se pudo cargar el Kot:", e);
+  const cargando = document.getElementById("cargando");
+  if (cargando) cargando.textContent = "No se pudo cargar el Kot. Revisá la conexión y volvé a entrar.";
+  throw e;
+});
+const { catalogo, kotModelo, piezas, huesoCabeza } = modelo;
+salto.add(kotModelo);
+document.getElementById("cargando").remove();
+const aplicar = () => modelo.aplicar(kot);
+// Clips del Stickman (reposo y gestos) y ragdoll al tocarlo: ver kot-modelo.js (Animador) y kot-trapo.js.
+const clips = modelo.clips;
+aplicar();
+const trapo = new Trapo(modelo);
+clips?.fondoA("reposo", 0);
+// Qué piezas se atraviesan (cajas medidas en la pose de descanso). Ver choques.js.
+const choques = iniciarChoques({ piezas, catalogo, kotModelo, huesoCabeza });
+const { choca } = choques;
+const tipos = [...Object.keys(TIPOS).filter((t) => catalogo.piezas[t]), ...Object.keys(catalogo.piezas).filter((t) => !TIPOS[t] && !OCULTOS.has(t)), "color"];
+let tipo = tipos[0];
+
+// Encuadres según el tamaño real del Kot: entero, la cabeza (con lugar para sombreros) o los pies.
+kotModelo.updateMatrixWorld(true);
+const cabezaY = huesoCabeza.getWorldPosition(new THREE.Vector3()).y + .2;
+const alto = cabezaY + .3;
+const ENCUADRES = {
+  cuerpo: { pos: [0, alto * .55, alto * 2.5], mira: [0, alto * .5, 0] },
+  cabeza: { pos: [0, cabezaY + .15, 2.3], mira: [0, cabezaY, 0] },
+  pies: { pos: [0, .6, 2.1], mira: [0, .25, 0] },
+};
+let encuadreActual = "cuerpo";
+const encuadre = { pos: new THREE.Vector3(...ENCUADRES.cuerpo.pos), mira: new THREE.Vector3(...ENCUADRES.cuerpo.mira) };
+const objetivo = { pos: new THREE.Vector3(), mira: new THREE.Vector3() };
+
+// --- Girar, agarrar, empujar ------------------------------------------------------------
+// Arrastrar sobre el Kot lo agarra (se vuelve ragdoll y cuelga del dedo); un toque corto lo empuja.
+// Arrastrar fuera del Kot lo gira. Cuando queda quieto se levanta solo y vuelve al clip.
+let arrastre = null, velocidadGiro = 0, alturaSalto = 0, velocidadSalto = 0, aplastar = 0, saludoHasta = -1;
+const rayador = new THREE.Raycaster(), plano = new THREE.Plane(), puntero = new THREE.Vector2();
+function rayoDe(e) {
+  const r = vista.getBoundingClientRect();
+  puntero.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  rayador.setFromCamera(puntero, camara);
+  return rayador.ray;
+}
+vista.addEventListener("pointerdown", (e) => {
+  vista.setPointerCapture(e.pointerId);
+  const toque = trapo.tocar(rayoDe(e));
+  arrastre = { x: e.clientX, y: e.clientY, inicio: e.clientX, inicioY: e.clientY, t: performance.now(), toque, agarrando: false };
+});
+vista.addEventListener("pointermove", (e) => {
+  if (!arrastre) return;
+  const { toque } = arrastre;
+  if (toque && !arrastre.agarrando && Math.hypot(e.clientX - arrastre.inicio, e.clientY - arrastre.inicioY) > 8) {
+    // Lo agarra: el dedo se mueve sobre un plano de frente a la cámara que pasa por donde lo tocó.
+    arrastre.agarrando = true;
+    encuadreActual = "cuerpo";
+    clips?.reiniciar();
+    trapo.agarrar(toque.parte, toque.punto);
+    plano.setFromNormalAndCoplanarPoint(camara.getWorldDirection(new THREE.Vector3()).negate(), toque.punto);
+  }
+  if (arrastre.agarrando) {
+    const punto = rayoDe(e).intersectPlane(plano, new THREE.Vector3());
+    if (punto) trapo.mover(punto);
+  } else if (!toque) {
+    velocidadGiro = (e.clientX - arrastre.x) * .012;
+    giro.rotation.y += velocidadGiro;
+  }
+  arrastre.x = e.clientX;
+});
+function terminarArrastre(e) {
+  if (!arrastre) return;
+  const corto = Math.hypot(e.clientX - arrastre.inicio, e.clientY - arrastre.inicioY) < 8 && performance.now() - arrastre.t < 350;
+  if (arrastre.agarrando) trapo.soltar();
+  else if (corto && arrastre.toque) {
+    // Empujón: hacia adentro de la pantalla, desde donde se tocó.
+    encuadreActual = "cuerpo";
+    trapo.empujar(arrastre.toque.parte, arrastre.toque.punto, camara.getWorldDirection(new THREE.Vector3()), 1);
+  } else if (corto) reaccionar();
+  arrastre = null;
+}
+vista.addEventListener("pointerup", terminarArrastre);
+vista.addEventListener("pointercancel", terminarArrastre);
+trapo.alLevantarse = () => { clips?.reiniciar(); };
+
+// Gesto al cambiar de pieza: corto, del pack. Sin clips, el saltito de antes.
+const GESTOS = [["saludo", 2], ["aplauso", 2], ["festejo", 1]];
+let gestoN = 0;
+function reaccionar(gesto) {
+  if (trapo.activo) return;
+  if (clips) {
+    const [nombre, veces] = gesto || GESTOS[gestoN++ % GESTOS.length];
+    clips.gesto(nombre, veces);
+    return;
+  }
+  if (alturaSalto > .001) return;
+  velocidadSalto = 2.4; aplastar = 1; saludoHasta = reloj.elapsedTime + 1.1;
+}
+
+const reloj = new THREE.Clock();
+function cuadro() {
+  const dt = Math.min(reloj.getDelta(), .05), t = reloj.elapsedTime;
+  if (!arrastre) { giro.rotation.y += velocidadGiro; velocidadGiro *= .92; }
+  velocidadSalto -= 9.8 * dt;
+  alturaSalto = Math.max(0, alturaSalto + velocidadSalto * dt);
+  if (alturaSalto === 0 && velocidadSalto < 0) velocidadSalto = 0;
+  aplastar = Math.max(0, aplastar - dt * 3);
+  const goma = Math.sin(aplastar * Math.PI * 2) * .1 * aplastar;
+  salto.position.y = alturaSalto;
+  salto.scale.set(1 + goma, 1 - goma, 1 + goma);
+  if (clips) clips.actualizar(dt);
+  else {
+    const saludo = saludoHasta > t ? Math.sin(Math.min(1, (saludoHasta - t) / 1.1) * Math.PI) : 0;
+    modelo.animar(t, { saludo });
+  }
+  // Tirado o levantándose: la física (o la mezcla de vuelta al clip) pisa la pose.
+  if (trapo.activo) { salto.position.y = 0; salto.scale.set(1, 1, 1); kotModelo.updateMatrixWorld(true); trapo.paso(dt); }
+  objetivo.pos.set(...ENCUADRES[encuadreActual].pos);
+  objetivo.mira.set(...ENCUADRES[encuadreActual].mira);
+  encuadre.pos.lerp(objetivo.pos, .12);
+  encuadre.mira.lerp(objetivo.mira, .12);
+  camara.position.copy(encuadre.pos);
+  camara.lookAt(encuadre.mira);
+  render.render(escena, camara);
+  requestAnimationFrame(cuadro);
+}
+new ResizeObserver(() => {
+  render.setSize(vista.clientWidth, vista.clientHeight, false);
+  camara.aspect = vista.clientWidth / vista.clientHeight;
+  camara.updateProjectionMatrix();
+}).observe(vista);
+
+// --- Menú -------------------------------------------------------------------------------
+const $ = (id) => document.getElementById(id);
+const mini = (t, id) => `${RUTA_MINIS}${t}_${id}.png?v=${catalogo.version}`;
+const recordar = () => { historial.push(copiar(kot)); if (historial.length > 60) historial.shift(); };
+const elegida = (t) => kot.piezas[t] ?? catalogo.inicial[t];
+const nombreDe = (t) => NOMBRE_PIEZA[t] || t;
+const unirLista = (lista) => lista.length > 1 ? `${lista.slice(0, -1).join(", ")} y ${lista[lista.length - 1]}` : lista[0];
+
+// --- Choques entre piezas -----------------------------------------------------------------
+// La grilla marca en naranja lo que chocaría con lo que ya está puesto; al elegir una pieza que
+// choca, la otra se saca sola. Con pelo y sombrero se prueba primero un pelo más corto.
+/** Tipos cuyo nombre es en plural: el verbo del aviso tiene que concordar. */
+const PLURALES = new Set(["anteojos"]);
+
+function primerChoquePuesto(tipo, id) {
+  const puestas = {};
+  for (const otro of TIPOS_CON_CHOQUE) puestas[otro] = elegida(otro);
+  return choques.primerChoque(tipo, id, puestas);
+}
+
+/**
+ * Un pelo que no choca con nada de lo puesto: el más corto (menor caja) que entra.
+ * Primero se busca del mismo color: los pelos con color propio ("Black Hair", "Blonde Hair"...)
+ * y después los que siguen el color global (material "kot_pelo", que se tiñe con el color elegido).
+ */
+function peloCompatible(peloActual) {
+  const lista = (catalogo.piezas.pelos || []).filter((p) => !p.vacia && !choques.rota("pelos", p.id));
+  // El color que se ve del pelo: el propio, o el global si el material es "kot_pelo".
+  const colorDe = (id) => choques.material("pelos", id) === "kot_pelo" ? kot.colorPelo : choques.color("pelos", id);
+  const colorActual = colorDe(peloActual);
+  // 0 = otro color, 1 = mismo color.
+  const prioridad = (id) => (colorDe(id) === colorActual ? 1 : 0);
+  const ordenados = lista.slice().sort((a, b) => prioridad(b.id) - prioridad(a.id)
+    || choques.volumen("pelos", a.id) - choques.volumen("pelos", b.id)
+    || choques.alto("pelos", a.id) - choques.alto("pelos", b.id));
+  for (const p of ordenados) if (!primerChoquePuesto("pelos", p.id)) return p.id;
+  return null;
+}
+
+const avisoChoque = { temporizador: 0 };
+function mostrarAvisoChoque(texto) {
+  const caja = $("aviso-choque");
+  $("aviso-choque-texto").textContent = texto;
+  caja.classList.add("ver");
+  clearTimeout(avisoChoque.temporizador);
+  avisoChoque.temporizador = setTimeout(() => caja.classList.remove("ver"), 5000);
+}
+function ocultarAvisoChoque() {
+  clearTimeout(avisoChoque.temporizador);
+  $("aviso-choque").classList.remove("ver");
+}
+
+/**
+ * Pone una pieza y resuelve los choques: la que ya estaba se saca sola.
+ * Excepción de la consigna: con pelo y sombrero no se saca el pelo, se busca el pelo más parecido
+ * (el más corto del mismo color) que no estorbe; si no hay ninguno, el pelo se saca.
+ * Devuelve qué se sacó (para el aviso).
+ */
+function resolverChoques(tipo, id) {
+  const sacadas = [];
+  let peloCambiado = false;
+  if (id === "sin") { kot.piezas[tipo] = "sin"; return { sacadas, peloCambiado }; }
+  kot.piezas[tipo] = id;
+  for (const otro of TIPOS_CON_CHOQUE) {
+    if (otro === tipo) continue;
+    const actual = elegida(otro);
+    if (actual === "sin" || !choca(tipo, id, otro, actual)) continue;
+    if (otro === "pelos" && tipo === "sombreros") {
+      // El sombrero gana: el pelo se cambia por el más corto del mismo color que no estorbe.
+      const alternativa = peloCompatible(actual);
+      if (alternativa) { kot.piezas.pelos = alternativa; peloCambiado = true; }
+      else { kot.piezas.pelos = "sin"; sacadas.push(otro); }
+    } else {
+      kot.piezas[otro] = "sin";
+      sacadas.push(otro);
+    }
+  }
+  return { sacadas, peloCambiado };
+}
+
+/**
+ * Orden en que se aplican las piezas cuando no es el usuario el que elige (carga, azar):
+ * la última que se aplica pisa a las anteriores. El sombrero va al final porque
+ * gana contra el pelo (y el pelo se cambia por uno más corto en vez de sacarse).
+ */
+const ORDEN_RESOLUCION = ["espalda", "pelos", "barbas", "anteojos", "caretas", "sombreros"];
+function resolverTodo() {
+  for (const t of ORDEN_RESOLUCION) resolverChoques(t, elegida(t));
+}
+
+/** El aviso: "Saqué los anteojos: chocaban con la careta". */
+function textoChoque(tipo, sacadas, peloCambiado) {
+  const cambios = [];
+  if (sacadas.length) cambios.push(`saqué ${unirLista(sacadas.map(nombreDe))}`);
+  if (peloCambiado) cambios.push("cambié el pelo por uno más corto");
+  let frase = cambios.join(" y ");
+  frase = frase[0].toUpperCase() + frase.slice(1);
+  const piezas = sacadas.length + (peloCambiado ? 1 : 0);
+  const plural = piezas > 1 || (sacadas.length === 1 && PLURALES.has(sacadas[0]));
+  return `${frase}: ${plural ? "chocaban" : "chocaba"} con ${nombreDe(tipo)}`;
+}
+
+function elegirPieza(tipo, id) {
+  recordar();
+  const { sacadas, peloCambiado } = resolverChoques(tipo, id);
+  aplicar();
+  pintarPanel();
+  reaccionar();
+  if (!sacadas.length && !peloCambiado) return;
+  mostrarAvisoChoque(textoChoque(tipo, sacadas, peloCambiado));
+}
+
+function pintarPartes() {
+  $("partes").innerHTML = "";
+  for (const t of tipos) {
+    const b = document.createElement("button");
+    const muestra = catalogo.inicial[t] !== "sin" ? catalogo.inicial[t] : catalogo.piezas[t]?.find((p) => !p.vacia)?.id;
+    if (TIPOS[t]?.subTabs) {
+      // Color tab: show icon with two colors
+      b.innerHTML = `<span class="emoji" style="background:linear-gradient(45deg,${COLORES[0]},${PELOS[0]})"></span>${TIPOS[t]?.nombre || t}`;
+    } else {
+      b.innerHTML = `<img src="${mini(t, muestra)}" alt="">${TIPOS[t]?.nombre || t}`;
+    }
+    b.classList.toggle("activa", t === tipo);
+    b.onclick = () => { 
+      tipo = t; 
+      encuadreActual = TIPOS[t]?.encuadre || "cuerpo"; 
+      if (TIPOS[t]?.subTabs) {
+        // Show sub-tabs in panel
+      }
+      pintar(); 
+    };
+    $("partes").appendChild(b);
+  }
+}
+
+function pintarPanel() {
+  const panel = $("panel");
+  panel.innerHTML = "";
+  
+  if (tipo === "color") {
+    // Color tab with sub-tabs
+    const subTabs = document.createElement("div");
+    subTabs.className = "sub-tabs";
+    subTabs.style.cssText = "display:flex; gap:8px; margin-bottom:12px; border-bottom:1px solid var(--borde); padding-bottom:8px;";
+    for (const sub of ["cuerpo", "pelo"]) {
+      const b = document.createElement("button");
+      b.textContent = sub === "cuerpo" ? "Cuerpo" : "Pelo";
+      b.style.cssText = "padding:8px 16px; border-radius:20px; border:2px solid transparent; font-weight:600; font-size:13px;";
+      b.classList.toggle("activo", colorSubTab === sub);
+      b.onclick = () => { colorSubTab = sub; pintarPanel(); };
+      subTabs.appendChild(b);
+    }
+    panel.appendChild(subTabs);
+    
+    const colorPanel = document.createElement("div");
+    if (colorSubTab === "cuerpo") {
+      colorPanel.appendChild(colores("Color de cuerpo", COLORES, kot, "colorCuerpo"));
+    } else {
+      colorPanel.appendChild(colores("Color de pelo", PELOS, kot, "colorPelo"));
+    }
+    panel.appendChild(colorPanel);
+  } else {
+    // Normal piece grid
+    const grilla = document.createElement("div");
+    grilla.className = "grilla";
+    for (const p of catalogo.piezas[tipo]) {
+      const b = document.createElement("button");
+      if (p.vacia) b.classList.add("vacio");
+      else b.innerHTML = `<img src="${mini(tipo, p.id)}" alt="${p.id}" loading="lazy">`;
+      b.title = p.vacia ? "Sin" : p.id.replace(/_/g, " ");
+      b.dataset.id = p.id;
+      b.classList.toggle("activo", p.id === elegida(tipo));
+      // Puntito naranja: esta pieza se atravesaría con algo de lo que ya está puesto (se puede elegir igual).
+      if (!p.vacia && p.id !== elegida(tipo)) {
+        const con = primerChoquePuesto(tipo, p.id);
+        if (con) {
+          const punto = document.createElement("span");
+          punto.className = "punto-choque";
+          punto.title = `Choca con ${nombreDe(con)}`;
+          b.appendChild(punto);
+          b.title += ` · choca con ${nombreDe(con)}`;
+        }
+      }
+      b.onclick = () => elegirPieza(tipo, p.id);
+      grilla.appendChild(b);
+    }
+    panel.appendChild(grilla);
+    if (TIPOS[tipo]?.colorPelo) panel.appendChild(colores("Color", PELOS, kot, "colorPelo"));
+  }
+}
+
+function colores(titulo, lista, objeto, clave) {
+  const caja = document.createElement("div");
+  caja.innerHTML = `<div class="titulo">${titulo}</div>`;
+  const fila = document.createElement("div");
+  fila.className = "colores";
+  for (const c of lista) {
+    const b = document.createElement("button");
+    b.style.background = c;
+    b.setAttribute("aria-label", `Color ${c}`);
+    b.classList.toggle("activo", objeto[clave] === c);
+    b.onclick = () => { recordar(); objeto[clave] = c; aplicar(); pintarPanel(); };
+    fila.appendChild(b);
+  }
+  caja.appendChild(fila);
+  return caja;
+}
+
+function pintar() { pintarPartes(); pintarPanel(); }
+
+$("azar").onclick = () => {
+  recordar();
+  kot = kotAlAzar(catalogo);
+  // El azar también tiene que salir prolijo: se pasa por la misma regla de choques.
+  resolverTodo();
+  aplicar();
+  pintarPanel();
+  reaccionar(["festejo", 1]);
+};
+function deshacer() {
+  if (!historial.length) return;
+  kot = historial.pop();
+  aplicar();
+  pintarPanel();
+  ocultarAvisoChoque();
+}
+$("deshacer").onclick = deshacer;
+$("aviso-choque-deshacer").onclick = deshacer;
+// `origen` lo pone la puerta al abrir el editor: "inicio" o "puerta".
+// Con origen, Listo guarda y vuelve a la pantalla de la que salió.
+const volverALaPuerta = () => { location.href = "../index.html?origen=editor"; };
+
+$("ragdoll").onclick = () => { guardarBorrador(kot); location.href = "ragdoll-kot.html"; };
+$("listo").onclick = () => {
+  guardarBorrador(kot);
+  if (embebido) { avisarAlPadre("kot-listo", { kot }); return; }
+  if (origen) { volverALaPuerta(); return; }
+  $("aviso").classList.add("ver");
+  setTimeout(() => $("aviso").classList.remove("ver"), 1400);
+  reaccionar(["festejo", 1]);
+};
+
+aplicar();
+pintar();
+cuadro();
+// Un borrador guardado antes de esta regla puede tener piezas que se atraviesan: se arreglan al abrir.
+resolverTodo();
+aplicar();
+pintarPanel();
+
+// ?debug-choques: tabla de cuántas combinaciones de cada pareja se atraviesan (para revisar los umbrales).
+if (parametros.has("debug-choques")) {
+  const filas = choques.tabla();
+  console.log("Choques por pareja (de más a menos):", filas);
+  console.table(filas);
+}
+
+// Para depurar desde la consola del navegador (y para probar piezas sin tocar la UI).
+window.__kot = { get kot() { return kot; }, kotModelo, catalogo, piezas, aplicar, render, modelo, giro, choques, trapo, clips, camara };
+</script>
+</body>
+</html>

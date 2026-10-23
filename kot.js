@@ -29,3 +29,5 @@ function kotSvg(color, inicial, clase = "") {
     </g>
   </svg>`;
 }
+
+export { kotSvg, oscurecer };
