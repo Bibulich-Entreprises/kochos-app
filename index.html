@@ -12,6 +12,7 @@
   <link rel="apple-touch-icon" href="iconos/icono-180.png">
   <link rel="icon" href="iconos/icono-192.png">
   <title>kochOS</title>
+  <link rel="stylesheet" href="kochos.css">
   <link rel="stylesheet" href="estilo.css">
   <script type="importmap">{ "imports": {
     "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
@@ -21,7 +22,7 @@
 <body>
   <header class="marca">
     <span class="logo">koch<b>OS</b></span>
-    <span class="consola" id="consola-nombre"></span>
+    <span class="pill" id="consola-nombre" hidden><i></i><span></span></span>
   </header>
   <!-- Sin perfil todavía: elegir cómo entrar. -->
   <main class="pantalla" data-pantalla="elegir">
@@ -40,6 +41,9 @@
   <!-- Paso 1: perfil o invitado. El Kot real se ve acá y se termina de armar en el paso 2. -->
   <main class="pantalla" data-pantalla="armar">
     <p class="paso">1 de 2 · Tu perfil</p>
+    <div class="vista-kot" id="vista-kot">
+      <div class="cargando" id="cargando-kot">Cargando tu Kot…</div>
+    </div>
     <h1 id="formulario-titulo">Tu perfil</h1>
     <label class="campo">
       <span>Nombre</span>
@@ -71,17 +75,39 @@
 
   <!-- Con perfil (o invitado de hoy): entrar a la consola. -->
   <main class="pantalla" data-pantalla="inicio">
-    <p class="nota" id="nota-inicio" hidden>Vista previa liviana: el 3D no cargó.</p>
-    <h1 id="saludo">Hola</h1>
-    <p class="etiqueta" id="tipo"></p>
+    <div class="etiqueta-kot">
+      <div class="vista-kot fondo-jugador" id="kot-inicio">
+        <div class="cargando" id="cargando-inicio" style="display:none">Cargando tu Kot…</div>
+      </div>
+      <div>
+        <h1 id="saludo">Hola</h1>
+        <p class="tipo" id="tipo"></p>
+      </div>
+      <p class="nota" id="nota-inicio" hidden>Vista previa liviana: el 3D no cargó.</p>
+    </div>
     <button class="principal grande" data-accion="entrar" id="entrar">Entrar</button>
-    <button class="secundario" data-accion="disenar" id="disenar-inicio">Editar mi Kot</button>
+    <button class="principal grande con-icono" data-accion="escanear" id="escanear">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><rect x="8" y="8" width="8" height="8" rx="1"/></svg>
+      <span>Escanear el QR de la tele<small>En la consola tocá Unirse</small></span>
+    </button>
     <div id="consolas"></div>
-    <p class="suave" id="sin-consola">Escaneá el QR de la tele para entrar a una consola.</p>
+    <p class="suave" id="sin-consola">Tocá Unirse en la consola y escaneá el QR que aparece en la tele.</p>
+    <button class="secundario con-icono" data-accion="disenar" id="disenar-inicio"><span id="disenar-texto">Editar mi Kot<small>Cara, pelo, ropa y colores</small></span></button>
     <div class="enlaces">
       <button data-accion="guardar-invitado" id="guardar-invitado">Guardar mi Kot como perfil</button>
-      <button data-accion="editar">Editar</button>
+      <button data-accion="editar">Cambiar nombre</button>
       <button data-accion="otro">Entrar como otra persona</button>
+    </div>
+  </main>
+
+  <!-- Escanear el QR de la tele con la cámara: anda también con la app agregada a inicio. -->
+  <main class="pantalla" data-pantalla="escanear">
+    <h1>Escaneá el QR</h1>
+    <p class="suave">En la consola tocá <b>Unirse</b> y apuntá la cámara al código de la tele.</p>
+    <div class="camara"><video id="camara" playsinline muted></video><div class="mira"></div></div>
+    <p class="nota" id="nota-camara" hidden></p>
+    <div class="acciones">
+      <button class="secundario" data-accion="atras">Volver</button>
     </div>
   </main>
 

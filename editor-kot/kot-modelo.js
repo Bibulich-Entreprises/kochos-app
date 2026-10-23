@@ -115,11 +115,45 @@ const draco = new DRACOLoader().setDecoderPath(new URL("./draco/", import.meta.u
 // No es brillo realista: es "cel shading", la luz en pocos escalones planos (como pintado con 3 tonos) y un borde
 // claro de corte duro en la silueta. Se ajusta con estos números: los tonos de los escalones (0-255, de la sombra a
 // la luz) y cuánto aclara el borde.
+// Los números reales salen de kot-estilo.json, el mismo archivo que usa Godot (consola/kochOS/kot/kot-estilo.json,
+// se copia acá al guardar la forma del Kot en Godot): un solo Kot para la tele y el celular. Estos son los de respaldo.
 export const DIBUJO = { escalones: [150, 215, 255], borde: .28 };
+// La forma editada en Godot (kot/forma/forma.tscn): cambios por hueso encima de cada cuadro.
+export const FORMA = {};
+
+/** Lee kot-estilo.json (una vez) y deja DIBUJO, ESCALA_MANOS y FORMA como dice. */
+let estiloCargado = null;
+export function cargarEstilo() {
+  estiloCargado ||= fetch(RUTA + "kot-estilo.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : {})).catch(() => ({})).then((estilo) => {
+    if (estilo.dibujo?.escalones) DIBUJO.escalones = estilo.dibujo.escalones;
+    if (typeof estilo.dibujo?.borde === "number") DIBUJO.borde = estilo.dibujo.borde;
+    if (typeof estilo.manos === "number") ESCALA_MANOS = estilo.manos;
+    // En Godot los huesos llevan punto (shoulder.l); en el .glb del celular, guion bajo (shoulder_l).
+    for (const [hueso, cambio] of Object.entries(estilo.forma || {})) FORMA[hueso.replace(/\.(?=[lrx]$)/, "_")] = cambio;
+    const datos = rampa.image.data;
+    DIBUJO.escalones.slice(0, 3).forEach((v, i) => datos.set([v, v, v, 255], i * 4));
+    rampa.needsUpdate = true;
+  });
+  return estiloCargado;
+}
+
+/** Suma la forma a los huesos (después de cada cuadro de animación). Devuelve cómo volver atrás. */
+function aplicarForma(raiz) {
+  const deshacer = [];
+  for (const [nombre, c] of Object.entries(FORMA)) {
+    const hueso = raiz.getObjectByName(nombre);
+    if (!hueso) continue;
+    deshacer.push([hueso, hueso.position.clone(), hueso.quaternion.clone(), hueso.scale.clone()]);
+    if (c.pos) hueso.position.add(new THREE.Vector3(...c.pos));
+    if (c.rot) hueso.quaternion.multiply(new THREE.Quaternion(...c.rot));
+    if (c.esc) hueso.scale.multiply(new THREE.Vector3(...c.esc));
+  }
+  return () => { for (const [h, p, q, e] of deshacer) { h.position.copy(p); h.quaternion.copy(q); h.scale.copy(e); } };
+}
 
 const rampa = (() => {
-  const datos = new Uint8Array(DIBUJO.escalones.flatMap((v) => [v, v, v, 255]));
-  const textura = new THREE.DataTexture(datos, DIBUJO.escalones.length, 1, THREE.RGBAFormat);
+  const datos = new Uint8Array([150, 215, 255].flatMap((v) => [v, v, v, 255]));
+  const textura = new THREE.DataTexture(datos, 3, 1, THREE.RGBAFormat);
   textura.magFilter = textura.minFilter = THREE.NearestFilter;
   textura.generateMipmaps = false;
   textura.needsUpdate = true;
@@ -148,7 +182,7 @@ export function entornoDeEstudio() {}
 
 /** Carga el Kot y devuelve el modelo y cómo aplicarle un perfil. */
 export async function cargarKot(opciones = {}) {
-  const catalogo = await (await fetch(RUTA + "kot.json", { cache: "no-cache" })).json();
+  const [catalogo] = await Promise.all([fetch(RUTA + "kot.json", { cache: "no-cache" }).then((r) => r.json()), cargarEstilo()]);
   if (catalogo.piezas.pelos) catalogo.piezas.pelos = catalogo.piezas.pelos.filter((p) => !PELOS_ROTOS.has(p.id));
   const cargador = new GLTFLoader().setDRACOLoader(draco);
   const gltf = await cargador.loadAsync(RUTA + "kot.glb?v=" + (catalogo.version || 0));
@@ -440,12 +474,13 @@ export async function cargarKot(opciones = {}) {
  */
 // Las manos del Stickman de fábrica son enormes: se achican (los clips también traen la escala de la mano,
 // así que se vuelve a fijar después de cada cuadro de animación).
-export const ESCALA_MANOS = .75;
+export let ESCALA_MANOS = .75;   // lo pisa kot-estilo.json
 const manosDe = (raiz) => ["hand_l", "hand_r"].map((n) => raiz.getObjectByName(n)).filter(Boolean);
 
 export class Animador {
   constructor(raiz, animaciones) {
     this.mezclador = new THREE.AnimationMixer(raiz);
+    this.raiz = raiz;
     this.manos = manosDe(raiz);
     this.clips = Object.fromEntries(animaciones.map((c) => [c.name, c]));
     this.fondo = null;
@@ -489,7 +524,10 @@ export class Animador {
   }
 
   actualizar(dt) {
+    // La forma se saca antes de animar (si no, se sumaría cuadro tras cuadro en los huesos que el clip no mueve).
+    this.deshacerForma?.();
     this.mezclador.update(dt);
     for (const mano of this.manos) mano.scale.setScalar(ESCALA_MANOS);
+    this.deshacerForma = aplicarForma(this.raiz);
   }
 }

@@ -96,10 +96,34 @@ function recordarConsola(direccion, nombre) {
 
 // --- Pantallas -------------------------------------------------------------------
 
+// Cada pantalla queda en el historial: el botón atrás del celular (o el gesto) vuelve a la anterior en vez
+// de cerrar la app. Al volver (popstate) se muestra sin sumar otra entrada.
+let navegandoAtras = false;
+let pantallaActual = null;
+
 function mostrar(nombre) {
+  if (pantallaActual === "escanear" && nombre !== "escanear") detenerCamara();
+  pantallaActual = nombre;
   document.querySelectorAll(".pantalla").forEach((p) => p.classList.toggle("visible", p.dataset.pantalla === nombre));
   if (nombre !== "editor") window.scrollTo(0, 0);
+  if (navegandoAtras || !history.state) history.replaceState({ pantalla: nombre }, "");
+  else if (history.state.pantalla !== nombre) history.pushState({ pantalla: nombre }, "");
 }
+
+window.addEventListener("popstate", (evento) => {
+  const destino = evento.state?.pantalla;
+  if (!destino) return;
+  navegandoAtras = true;
+  try {
+    if (pantallaActual === "editor") cerrarEditor();
+    if (destino === "armar" && borrador) { mostrar("armar"); montarVistaFormulario(); }
+    else if (destino === "elegir" && !identidad()) mostrar("elegir");
+    else if (destino === "escanear") abrirEscaner();
+    else { descartarBorrador(); identidad() ? pintarInicio() : mostrar("elegir"); }
+  } finally {
+    navegandoAtras = false;
+  }
+});
 
 function avisar(texto) {
   const caja = $("aviso");
@@ -258,14 +282,18 @@ function elegirColor(color) {
   borrador.kot = normalizarKot(borrador.kot, color);
   pintarColores();
   persistirBorrador();
+  if (vistaKot) vistaKot.modelo.aplicar(borrador.kot);
+  else $("vista-kot").innerHTML = kotSvg(color, borrador.nombre || "?");
 }
 
 function pintarModos() {
   document.querySelectorAll("#modos button").forEach((b) => b.classList.toggle("activo", b.dataset.modo === borrador.modo));
 }
 
-// Sin Kot girando en el perfil ni en el inicio (23/10, Mirko): el Kot se ve en el editor.
-async function montarVistaFormulario() {}
+async function montarVistaFormulario() {
+  const vista = await crearVista($("vista-kot"), borrador.kot, { encuadre: "cuerpo", velocidad: .0015, inicial: borrador.nombre || "?" });
+  $("nota-preview").hidden = !!vista;
+}
 
 // --- Paso 2: editor embebido ------------------------------------------------------
 
@@ -406,20 +434,26 @@ async function pintarInicio(opciones = {}) {
   $("guardar-invitado").style.display = yo.tipo === "invitado" ? "" : "none";
   $("entrar").style.display = consola ? "" : "none";
   $("entrar").textContent = consola ? `Entrar a ${nombreConsola || "la consola"}` : "Entrar";
-  $("disenar-inicio").textContent = tienePiezas(yo.kot) ? "Editar mi Kot" : "Armar mi Kot";
+  $("disenar-texto").firstChild.textContent = tienePiezas(yo.kot) ? "Editar mi Kot" : "Armar mi Kot";
+  document.documentElement.style.setProperty("--jugador", yo.color || "#ff5a5f");
 
   const consolas = consola ? [] : leer(CLAVES.consolas) || [];
   $("consolas").innerHTML = consolas.length ? "<h2>Tus consolas</h2>" : "";
   for (const guardada of consolas) {
     const boton = document.createElement("button");
     boton.className = "consola-guardada";
-    boton.innerHTML = `<span>${escapar(guardada.nombre)}</span><small>${escapar(guardada.direccion)}</small>`;
+    boton.innerHTML = `<span class="pill${guardada.visitada ? " si" : ""}"><i></i></span><span>${escapar(guardada.nombre)}</span><small>${escapar(guardada.direccion)}</small>`;
     boton.onclick = () => entrar(guardada.direccion, guardada.nombre);
     $("consolas").appendChild(boton);
   }
   $("sin-consola").style.display = consola || consolas.length ? "none" : "";
+  // Con la consola en la dirección (vino del QR) ya está todo; si no, se escanea desde acá.
+  $("escanear").className = (consola || consolas.length ? "secundario" : "principal grande") + " con-icono";
+  $("escanear").style.display = consola ? "none" : "";
 
   mostrar("inicio");
+  const vista = await crearVista($("kot-inicio"), yo.kot, { encuadre: "cuerpo", velocidad: .0008, inicial: yo.nombre });
+  $("nota-inicio").hidden = !!vista;
   if (opciones.aviso) avisar(opciones.aviso);
 }
 
@@ -442,7 +476,27 @@ function irAlControl() {
   guardar(CLAVES.consolas, lista);
   const yo = identidad();
   const paquete = paqueteDelPerfil(yo, location.origin + location.pathname);
+  const foto = fotoDelKot();
+  if (foto) paquete.perfil.foto = foto;
   location.href = `https://${direccion}/#p=${aBase64(JSON.stringify(paquete))}`;
+}
+
+// Una foto chiquita de tu Kot (la vista 3D del inicio) para el control: viaja en el paquete y es tu avatar.
+// 112 px en webp pesan ~3 KB, entran en la dirección sin problema.
+function fotoDelKot() {
+  try {
+    if (!vistaKot) return "";
+    vistaKot.render.render(vistaKot.escena, vistaKot.camara);
+    const fuente = vistaKot.render.domElement;
+    const lado = Math.min(fuente.width, fuente.height * .62);
+    const lienzo = document.createElement("canvas");
+    lienzo.width = lienzo.height = 112;
+    lienzo.getContext("2d").drawImage(fuente, (fuente.width - lado) / 2, fuente.height * .04, lado, lado, 0, 0, 112, 112);
+    const foto = lienzo.toDataURL("image/webp", .8);
+    return foto.startsWith("data:image/webp") && foto.length < 12000 ? foto : "";
+  } catch (e) {
+    return "";
+  }
 }
 
 function aBase64(texto) {
@@ -454,6 +508,77 @@ function aBase64(texto) {
 
 function escapar(texto) {
   return String(texto).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c]));
+}
+
+// --- Escanear el QR de la tele ------------------------------------------------------
+// La app agregada a inicio no pasa por la cámara del celular: escanea acá adentro. Android trae
+// BarcodeDetector; en iPhone se usa jsQR (se baja una vez y queda guardada por el service worker).
+
+let flujo = null;
+let escaneando = false;
+
+async function abrirEscaner() {
+  mostrar("escanear");
+  const nota = $("nota-camara");
+  nota.hidden = true;
+  try {
+    flujo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+  } catch (e) {
+    nota.textContent = "No pude abrir la cámara. Dale permiso en los ajustes del navegador, o escaneá con la cámara del celular.";
+    nota.hidden = false;
+    return;
+  }
+  const video = $("camara");
+  video.srcObject = flujo;
+  await video.play().catch(() => {});
+  escaneando = true;
+  const leer = await lectorQR();
+  const lienzo = document.createElement("canvas");
+  const ctx = lienzo.getContext("2d", { willReadFrequently: true });
+  while (escaneando) {
+    await new Promise((r) => setTimeout(r, 200));
+    if (!escaneando || video.readyState < 2) continue;
+    const texto = await leer(video, lienzo, ctx).catch(() => null);
+    const destino = texto && consolaDelQR(texto);
+    if (destino) {
+      detenerCamara();
+      if (navigator.vibrate) navigator.vibrate(30);
+      entrar(destino.direccion, destino.nombre);
+      return;
+    }
+  }
+}
+
+function detenerCamara() {
+  escaneando = false;
+  if (flujo) flujo.getTracks().forEach((t) => t.stop());
+  flujo = null;
+}
+
+async function lectorQR() {
+  if ("BarcodeDetector" in window) {
+    const detector = new BarcodeDetector({ formats: ["qr_code"] });
+    return async (video) => (await detector.detect(video))[0]?.rawValue || null;
+  }
+  const { default: jsQR } = await import("https://cdn.jsdelivr.net/npm/jsqr@1.4.0/+esm");
+  return async (video, lienzo, ctx) => {
+    lienzo.width = video.videoWidth;
+    lienzo.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0);
+    return jsQR(ctx.getImageData(0, 0, lienzo.width, lienzo.height).data, lienzo.width, lienzo.height)?.data || null;
+  };
+}
+
+// El QR lleva la puerta con ?consola=IP:PUERTO&nombre=...; también vale la dirección directa de la consola.
+function consolaDelQR(texto) {
+  try {
+    const url = new URL(texto);
+    const directa = url.searchParams.get("consola");
+    const direccion = limpiarDireccion(directa || (url.port === "8443" ? url.host : ""));
+    return direccion ? { direccion, nombre: (url.searchParams.get("nombre") || "").slice(0, 40) } : null;
+  } catch (e) {
+    return null;
+  }
 }
 
 // --- Botones -----------------------------------------------------------------------
@@ -470,6 +595,8 @@ const acciones = {
   otro: entrarComoOtro,
   "volver-inicio": pintarInicio,
   "entrar-ya": irAlControl,
+  escanear: abrirEscaner,
+  atras: () => history.back(),
 };
 
 document.addEventListener("click", (e) => {
@@ -495,7 +622,10 @@ window.addEventListener("message", recibirDelEditor);
 // --- Arranque ----------------------------------------------------------------------
 
 if (consola) recordarConsola(consola, nombreConsola);
-$("consola-nombre").textContent = consola ? (nombreConsola || consola) : "";
+if (consola) {
+  $("consola-nombre").hidden = false;
+  $("consola-nombre").lastElementChild.textContent = nombreConsola || consola;
+}
 
 // Banderas del flujo viejo (editor como página aparte): no hacen falta y confunden.
 sessionStorage.removeItem("kochos.vuelveDelEditor");

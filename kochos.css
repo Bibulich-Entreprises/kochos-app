@@ -1,0 +1,66 @@
+/* kochOS en el celular: la misma tela que el menú de la tele (gris con puntitos, tarjetas blancas,
+   azul de acento). La usan la puerta (este sitio) y el control de la consola (la consola la sirve como
+   /kochos.css). Adentro de un juego, el control le suma la piel del juego (ej. control/clue-piel.js). */
+
+:root {
+  --fondo: #eef2f6; --tarjeta: #ffffff; --tinta: #1f2a36; --suave: #6f7d8c; --borde: rgba(31, 42, 54, .1);
+  --acento: #2f6ff0; --acento-oscuro: #1f55c4; --hundido: #e3e9ef; --punto: rgba(31, 42, 54, .09);
+  --jugador: #ff5a5f;
+  --radio-grande: 26px; --radio: 20px; --radio-chico: 14px;
+  --sombra-tarjeta: 0 2px 0 var(--borde), 0 14px 30px rgba(31, 42, 54, .08);
+  --sombra-boton: 0 3px 0 var(--borde);
+}
+@media (prefers-color-scheme: dark) {
+  :root { --fondo: #10161f; --tarjeta: #1f2836; --tinta: #e9eef5; --suave: #8693a5; --borde: rgba(255, 255, 255, .08);
+    --acento: #4f86ff; --acento-oscuro: #2c5fcf; --hundido: #18202b; --punto: rgba(255, 255, 255, .05);
+    --sombra-tarjeta: 0 2px 0 rgba(0, 0, 0, .3), 0 14px 30px rgba(0, 0, 0, .25); --sombra-boton: 0 3px 0 rgba(0, 0, 0, .35); }
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body {
+  background-color: var(--fondo); color: var(--tinta); font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background-image: radial-gradient(var(--punto) 1.4px, transparent 1.6px); background-size: 22px 22px;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 3px solid color-mix(in srgb, var(--acento) 55%, transparent); outline-offset: 2px; }
+
+.logo { font-size: 18px; font-weight: 800; letter-spacing: -.02em; }
+.logo b { color: var(--acento); }
+.suave { color: var(--suave); }
+
+/* Pastilla de estado (conectado, consola guardada). */
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; background: var(--tarjeta);
+  box-shadow: var(--sombra-boton); font-weight: 650; font-size: 12px; color: var(--tinta); white-space: nowrap; }
+.pill i { width: 8px; height: 8px; border-radius: 50%; background: #f4a261; }
+.pill.si i { background: #3ddc84; }
+
+/* Botones: el principal es azul con canto (como los de la base de la consola en la tele). */
+.principal, .secundario { border: 0; border-radius: var(--radio); padding: 16px 18px; font-size: 17px; font-weight: 750; }
+.principal { color: #fff; background: var(--acento); box-shadow: 0 5px 0 var(--acento-oscuro); }
+.principal:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--acento-oscuro); }
+.principal:disabled { opacity: .45; }
+.principal.grande { font-size: 19px; padding: 19px 18px; }
+.secundario { background: var(--tarjeta); box-shadow: var(--sombra-boton); }
+.secundario:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--borde); }
+.con-icono { display: flex; align-items: center; gap: 12px; text-align: left; }
+.con-icono svg { flex: none; }
+.con-icono small { display: block; font-weight: 500; font-size: 13px; opacity: .8; margin-top: 2px; }
+
+.segmentos { display: flex; padding: 4px; gap: 4px; background: var(--hundido); border-radius: 16px; }
+.segmentos button { flex: 1; border: 0; border-radius: 12px; padding: 10px 0; font-weight: 700; background: transparent; color: var(--suave); }
+.segmentos button.activo { background: var(--tarjeta); color: var(--tinta); box-shadow: 0 2px 6px rgba(0, 0, 0, .12); }
+
+/* Tu Kot como etiqueta de cartucho: el mismo marco que los cartuchos del estante de la tele. */
+.etiqueta-kot { position: relative; background: var(--tarjeta); border-radius: var(--radio-grande); padding: 22px 16px 16px;
+  box-shadow: var(--sombra-tarjeta); }
+.etiqueta-kot::before { content: ""; position: absolute; left: 18px; right: 18px; top: 9px; height: 6px; border-radius: 3px;
+  background: repeating-linear-gradient(90deg, var(--hundido) 0 3px, transparent 3px 6px); }
+.fondo-jugador { background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--jugador) 20%, var(--tarjeta)), color-mix(in srgb, var(--jugador) 38%, var(--hundido))); }
+
+/* Avatar chico: la foto de tu Kot (la saca la puerta al entrar) sobre tu color. */
+.avatar-kot { width: 46px; height: 46px; flex: none; border-radius: 15px; overflow: hidden; display: grid; place-items: end center; }
+.avatar-kot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar-kot .kot { width: 100%; height: 100%; }
+
+@media (prefers-reduced-motion: reduce) { * { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
