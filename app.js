@@ -166,7 +166,8 @@ async function crearVista(contenedor, kot, opciones = {}) {
   cargando.style.display = "grid";
 
   try {
-    const modelo = await cargarKot({ clips: false });
+    // Con los clips del editor (reposo del Stickman): el mismo movimiento que en el editor y en la tele.
+    const modelo = await cargarKot();
     if (token !== tokenVista) return null; // se cambió de pantalla mientras cargaba
 
     const render = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -201,6 +202,7 @@ async function crearVista(contenedor, kot, opciones = {}) {
     }
 
     modelo.aplicar(kot);
+    modelo.clips?.fondoA("reposo", 0);
 
     const quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
     const vista = { modelo, render, escena, camara, giro, contenedor, loopId: 0, observador: null };
@@ -212,7 +214,9 @@ async function crearVista(contenedor, kot, opciones = {}) {
       t += dt;
       if (!quieto) {
         giro.rotation.y += velocidad;
-        modelo.animar(t);
+        // Sin clips (no cargó kot_animaciones.glb) queda el reposo hecho a mano.
+        if (modelo.clips) modelo.clips.actualizar(dt);
+        else modelo.animar(t);
       }
       render.render(escena, camara);
       vista.loopId = requestAnimationFrame(cuadro);
